@@ -137,7 +137,11 @@ textarea{min-height:110px;resize:vertical}
     <button class="btn gg" id="gBtn" type="button">Continuer avec Google</button>
     <div class="or">OU</div>
     <input type="email" id="aEmail" placeholder="Ton adresse e-mail" autocomplete="email">
-    <button class="btn" id="aBtn" type="button">Recevoir mon lien de connexion</button>
+    <button class="btn" id="aBtn" type="button">Recevoir mon code de connexion</button>
+    <div id="codeBox" class="hide" style="margin-top:14px">
+      <input type="text" id="aCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code reçu par e-mail" style="text-align:center;font-size:20px;letter-spacing:6px">
+      <button class="btn" id="aCodeBtn" type="button">Valider le code</button>
+    </div>
   </div>
   <div class="msg" id="aMsg"></div>
 </div></div>
@@ -855,7 +859,14 @@ $("gBtn").onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provide
 $("aBtn").onclick=async()=>{const em=$("aEmail").value.trim();if(!/^\S+@\S+\.\S+$/.test(em)){authMsg("Entre une adresse e-mail valide.",1);return}
   $("aBtn").disabled=true;const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin}});$("aBtn").disabled=false;
   if(error)authMsg(/rate|seconds/i.test(error.message)?"Trop d’e-mails envoyés pour le moment (limite de sécurité). Réessaie dans une heure, ou utilise « Continuer avec Google ».":"L’envoi n’a pas fonctionné : "+error.message,1);
-  else{authMsg("C’est envoyé ! Ouvre l’e-mail reçu sur cet appareil et clique sur le lien pour entrer. Pense à regarder dans les spams.");}};
+  else{authMsg("C’est envoyé ! Tape le code reçu par e-mail ci-dessous (ou clique sur le lien de l’e-mail sur cet appareil). Pense à regarder dans les spams.");$("codeBox").classList.remove("hide");$("aCode").focus();}};
+$("aCodeBtn").onclick=async()=>{const em=$("aEmail").value.trim(),tk=$("aCode").value.replace(/\s/g,"");if(!em||!tk){authMsg("Entre ton e-mail et le code reçu.",1);return}
+  $("aCodeBtn").disabled=true;let r=await sb.auth.verifyOtp({email:em,token:tk,type:"email"});
+  if(r.error)r=await sb.auth.verifyOtp({email:em,token:tk,type:"signup"});
+  $("aCodeBtn").disabled=false;
+  if(r.error){authMsg("Code incorrect ou expiré. Vérifie le dernier e-mail reçu, ou redemande un code dans quelques minutes.",1);return}
+  if(r.data&&r.data.session)start(r.data.session)};
+$("aCode").addEventListener("keydown",e=>{if(e.key==="Enter")$("aCodeBtn").click()});
 $("aEmail").addEventListener("keydown",e=>{if(e.key==="Enter")$("aBtn").click()});
 
 let started=false;
