@@ -318,7 +318,7 @@ function renderKpis(){
   const active=S.partners.filter(p=>["Message envoyé","Accepté","Colis envoyé","Relance"].includes(p.status)).length;
   let s30="—",o30="—";
   if(shop&&shop.rows){const last4=shop.rows.slice(-4);s30=fmtE(last4.reduce((a,r)=>a+Number(r[1]||0),0));o30=fmtN(last4.reduce((a,r)=>a+Number(r[2]||0),0));}
-  const k=[["Ventes site (4 sem.)",s30,"Shopify, mis à jour automatiquement"],["Commandes (4 sem.)",o30,"Shopify"],
+  const k=[["Ventes site (4 sem.)",s30,"Shopify : prochaine version"],["Commandes (4 sem.)",o30,"Shopify"],
     folK("Abonnés TikTok","tiktok",lastStat),folK("Abonnés Instagram","instagram",lastStat),folK("Abonnés Facebook","facebook",lastStat),
     ["Programmées",fmtN(S.posts.filter(p=>p.status==="programme").length),"Publications programmées"],
     ["Publications 7 jours",fmtN(upcoming),"Prévues, pas encore publiées"],["Partenariats en cours",fmtN(active),"Contactées → colis envoyé"]];
@@ -812,7 +812,7 @@ function authMsg(t,bad){$("aMsg").textContent=t;$("aMsg").style.color=bad?"#7A3A
 $("gBtn").onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin}});if(error)authMsg("La connexion Google n’est pas encore activée : utilise le lien par e-mail.",1)};
 $("aBtn").onclick=async()=>{const em=$("aEmail").value.trim();if(!/^\S+@\S+\.\S+$/.test(em)){authMsg("Entre une adresse e-mail valide.",1);return}
   $("aBtn").disabled=true;const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin}});$("aBtn").disabled=false;
-  if(error)authMsg(/rate|seconds/i.test(error.message)?"Trop de demandes : attends une minute puis réessaie.":"L’envoi n’a pas fonctionné : "+error.message,1);
+  if(error)authMsg(/rate|seconds/i.test(error.message)?"Trop d’e-mails envoyés pour le moment (limite de sécurité). Réessaie dans une heure, ou utilise « Continuer avec Google ».":"L’envoi n’a pas fonctionné : "+error.message,1);
   else{authMsg("C’est envoyé ! Ouvre l’e-mail reçu sur cet appareil et clique sur le lien pour entrer. Pense à regarder dans les spams.");}};
 $("aEmail").addEventListener("keydown",e=>{if(e.key==="Enter")$("aBtn").click()});
 
