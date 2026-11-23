@@ -10,8 +10,8 @@ create table if not exists public.members (
 
 -- Les personnes qui ont accès à l'appli (adresses en minuscules)
 insert into public.members (email, name, color) values
-  (lower('__AMY_EMAIL__'), 'Amy', '#8C7B6C'),
-  (lower('__KAYLIAH_EMAIL__'), 'Kayliah', '#1C1A18')
+  (lower('amy2creme@gmail.com'), 'Amy', '#8C7B6C'),
+  (lower('kayliah.kebe@gmail.com'), 'Kayliah', '#1C1A18')
 on conflict (email) do update set name = excluded.name, color = excluded.color;
 
 -- ===== Données de l'appli =====
@@ -47,6 +47,12 @@ create policy "chacune modifie son profil" on public.members for update to authe
 drop policy if exists "membres gerent les donnees" on public.docs;
 create policy "membres gerent les donnees" on public.docs for all to authenticated
   using (public.is_member()) with check (public.is_member());
+
+-- Accès API (seuls les membres passent les règles ci-dessus)
+grant usage on schema public to authenticated;
+grant select, update on public.members to authenticated;
+grant select, insert, update, delete on public.docs to authenticated;
+grant execute on function public.is_member() to authenticated;
 
 -- Temps réel (les modifications de l'une apparaissent chez l'autre)
 do $$ begin
