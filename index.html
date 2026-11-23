@@ -54,7 +54,7 @@ svg text{font-family:Montserrat,sans-serif}
 .x{background:none;border:0;color:var(--taud);cursor:pointer;font-size:16px;padding:0 4px}
 .row{display:flex;gap:8px}
 .row input{flex:1}
-input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=password],input[type=url],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}
 textarea{min-height:110px;resize:vertical}
 /* kanban */
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
@@ -79,7 +79,7 @@ textarea{min-height:110px;resize:vertical}
 .av{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;color:#fff;vertical-align:middle;overflow:hidden;flex:0 0 auto}.av img{width:100%;height:100%;object-fit:cover}
 .who{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--taud);vertical-align:middle}
 .mechip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--wht);border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer;font-size:13px;font-weight:600}.mechip .av{width:28px;height:28px;font-size:13px}
-.pick{display:flex;gap:12px;justify-content:center;margin:16px 0}.pick button{border:1px solid var(--line);background:var(--wht);border-radius:16px;padding:16px 22px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:600;font-size:15px}.pick .av{width:48px;height:48px;font-size:20px}
+.pick{display:flex;gap:12px;justify-content:center;margin:16px 0}.pick button{border:1px solid var(--line);background:var(--wht);border-radius:16px;padding:16px 22px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:600;font-size:15px}.pick .av{width:48px;height:48px;font-size:20px}.pick button.on{border-color:var(--blk);border-width:2px}
 .mbox{background:var(--bei2);border-radius:12px;padding:12px;margin-top:6px}.mbox h4{margin:0 0 6px;font-size:13px}
 /* agenda */
 .day{margin-bottom:14px}.day h5{margin:0 0 6px;font-size:13px;color:var(--taud);text-transform:capitalize}
@@ -290,7 +290,7 @@ addEventListener("hashchange",route);route();
 /* ---------- modal ---------- */
 function openModal(html,onMount){$("md").innerHTML=html;$("ov").classList.add("on");onMount&&onMount($("md"));}
 function closeModal(){$("ov").classList.remove("on");$("md").innerHTML="";}
-$("ov").addEventListener("click",e=>{if(e.target.id==="ov")closeModal();});
+$("ov").addEventListener("click",e=>{if(e.target.id==="ov"&&$("ov").dataset.lock!=="1")closeModal();});
 
 /* ---------- helpers ---------- */
 function need(){if(!db){$("nodb").classList.remove("hide");return false}return true}
@@ -646,7 +646,7 @@ const toks=t=>new Set(norm(t).split(" ").filter(w=>w.length>=4&&!STOP.has(w)));
 function similar(a,b){const A=toks(a),B=toks(b);if(!A.size||!B.size)return norm(a)===norm(b)&&norm(a)!=="";
   let i=0;A.forEach(w=>{if(B.has(w))i++});const mn=Math.min(A.size,B.size);return norm(a)===norm(b)||(mn>=2&&i/mn>=0.75)||(i/(A.size+B.size-i)>=0.6)}
 let TEAM=["Amy","Kayliah"]; const TCOL={"Amy":"#8C7B6C","Kayliah":"#1C1A18"};
-let MEMBERS=[], ME=null, uid=null;
+let MEMBERS=[], ME=null, AUTH=null, uid=null;
 function me(){return ME?ME.name:""}
 function stamp(){return {by:me()||null,byId:uid||null,at:Date.now()}}
 function memberBy(label,id){return MEMBERS.find(m=>(id&&m.email===id))||MEMBERS.find(m=>label&&m.name===label)}
@@ -655,18 +655,60 @@ function avatar(label,id){const m=memberBy(label,id);const nm=label||(m&&m.name)
   const col=(m&&m.color)||TCOL[nm]||"#B5A08A";return `<span class="av" style="background:${esc(col)}">${esc((nm||"?").slice(0,1).toUpperCase())}</span>`}
 function whoTag(st,prefix){if(!st||!(st.by||st.byId))return "";const m=memberBy(st.by,st.byId);const nm=st.by||(m&&m.name)||"";
   return `<span class="who">${avatar(st.by,st.byId)}${esc(prefix||"")}${esc(nm||"Quelqu’un")}</span>`}
-function renderMe(){const m=me();$("meChip").innerHTML=m?`<div class="mechip" id="meBtn" title="Mon profil">${avatar(m,uid)}${esc(m)}</div>`:"";if(m)$("meBtn").onclick=profileModal}
-function profileModal(){openModal(`<h3>Mon profil</h3>
+function renderMe(){const m=me();$("meChip").innerHTML=m?`<div class="mechip" id="meBtn" title="Qui travaille ?">${avatar(m,uid)}${esc(m)} <span style="font-weight:400;color:var(--taud)">▾</span></div>`:"";if(m)$("meBtn").onclick=whoModal}
+/* ---- qui travaille ? (code personnel) ---- */
+const SHARED_KEY="kabineShared", ACT_KEY="kabineActing", SEEN_KEY="kabineSeen", IDLE=30*60*1000;
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+const isShared=()=>ls.get(SHARED_KEY)==="1";
+async function pinHash(email,pin){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("kabine:"+email+":"+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+const pinOf=email=>{const d=DOCS.pins&&DOCS.pins.get(email);return d&&d.hash||null};
+function setActing(m){ME=m;uid=m.email;ls.set(ACT_KEY,m.email);ls.set(SEEN_KEY,String(Date.now()));renderMe();rerenderAll();renderKpis()}
+function whoModal(force){
+  openModal(`<h3 style="text-align:center">Qui travaille ?</h3><p class="sub" style="text-align:center;margin:0">Tout ce que tu fais sera signé à ton nom.</p>
+  <div class="pick">${MEMBERS.map(m=>`<button data-who="${esc(m.email)}" class="${ME&&ME.email===m.email?"on":""}">${avatar(m.name,m.email)}${esc(m.name)}</button>`).join("")}</div>
+  <div id="pinBox"></div>
+  <label style="display:flex;gap:8px;align-items:center;justify-content:center;font-size:13px;margin-top:10px"><input type="checkbox" id="shr" ${isShared()?"checked":""}> Appareil partagé (redemander après 30 min sans utilisation)</label>
+  <div class="mfoot">${force?"<span></span>":`<button class="btn ghost" id="prof">Mon profil</button>`}${force?"":`<button class="btn ghost" id="cx">Fermer</button>`}</div>`,m=>{
+    const q=k=>m.querySelector(k);
+    if(q("#cx"))q("#cx").onclick=closeModal;
+    if(q("#prof"))q("#prof").onclick=profileModal;
+    if(force)$("ov").dataset.lock="1";
+    q("#shr").onchange=e=>{if(e.target.checked)ls.set(SHARED_KEY,"1");else ls.del(SHARED_KEY)};
+    m.querySelectorAll("[data-who]").forEach(b=>b.onclick=()=>{
+      const mem=MEMBERS.find(x=>x.email===b.dataset.who);const has=pinOf(mem.email);
+      if(AUTH&&mem.email===AUTH.email&&!has){$("ov").dataset.lock="";setActing(mem);closeModal();return}
+      q("#pinBox").innerHTML=`<div class="fld" style="max-width:240px;margin:14px auto 0;text-align:center"><label>${has?"Ton code à 4 chiffres, "+esc(mem.name):"Choisis ton code à 4 chiffres, "+esc(mem.name)}</label>
+        <input type="password" inputmode="numeric" maxlength="4" id="pin" style="text-align:center;font-size:22px;letter-spacing:8px" autocomplete="off">
+        ${has?"":`<input type="password" inputmode="numeric" maxlength="4" id="pin2" placeholder="Confirme le code" style="text-align:center;font-size:16px;margin-top:8px" autocomplete="off">`}
+        <button class="btn" id="pok" style="margin-top:10px;width:100%">${has?"Valider":"Enregistrer mon code"}</button><div class="note" id="pmsg"></div></div>`;
+      const pin=q("#pin");pin.focus();
+      const go=async()=>{const v=pin.value.trim();if(!/^\d{4}$/.test(v)){q("#pmsg").textContent="4 chiffres, s’il te plaît.";return}
+        if(has){if(await pinHash(mem.email,v)!==has){q("#pmsg").textContent="Code incorrect.";pin.value="";pin.focus();return}}
+        else{if(q("#pin2").value.trim()!==v){q("#pmsg").textContent="Les deux codes ne sont pas identiques.";return}
+          try{await DB.collection("pins").doc(mem.email).set({hash:await pinHash(mem.email,v),at:Date.now()})}catch(e){q("#pmsg").textContent="Le code n’a pas pu être enregistré.";return}}
+        $("ov").dataset.lock="";setActing(mem);closeModal()};
+      q("#pok").onclick=go;pin.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+    });
+  });
+}
+function touchSeen(){if(ME)ls.set(SEEN_KEY,String(Date.now()))}
+function idleCheck(){if(!ME||!isShared())return;const t=Number(ls.get(SEEN_KEY)||0);if(Date.now()-t>IDLE&&!$("ov").classList.contains("on"))whoModal(true)}
+["click","keydown","touchstart"].forEach(ev=>document.addEventListener(ev,touchSeen,{passive:true}));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)idleCheck()});setInterval(idleCheck,60000);
+function profileModal(){const own=AUTH&&ME&&AUTH.email===ME.email;openModal(`<h3>Mon profil</h3>
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px"><span style="transform:scale(2.2);margin:10px 18px">${avatar(me(),uid)}</span><div><div style="font-weight:600">${esc(me())}</div><div class="muted">${esc(uid||"")}</div></div></div>
-  <div class="fld"><label>Photo de profil</label><input type="file" id="avf" accept="image/*"><div class="note" id="avm"></div></div>
+  ${own?`<div class="fld"><label>Photo de profil</label><input type="file" id="avf" accept="image/*"><div class="note" id="avm"></div></div>`:`<div class="note">Pour changer ta photo, connecte-toi avec ton propre e-mail sur ton appareil.</div>`}
+  ${pinOf(uid)?`<button class="btn ghost sm" id="rpin" type="button">Changer mon code</button>`:""}
+  <div class="note">Appareil connecté avec : ${esc(AUTH?AUTH.email:"")}</div>
   <div class="mfoot"><button class="btn danger" id="lo">Se déconnecter</button><button class="btn ghost" id="cx">Fermer</button></div>`,m=>{
     m.querySelector("#cx").onclick=closeModal;
     m.querySelector("#lo").onclick=async()=>{await sb.auth.signOut();location.reload()};
-    m.querySelector("#avf").onchange=async e=>{const f=e.target.files[0];if(!f)return;m.querySelector("#avm").textContent="Envoi…";
+    if(m.querySelector("#rpin"))m.querySelector("#rpin").onclick=async()=>{const v=prompt("Nouveau code à 4 chiffres");if(!v||!/^\d{4}$/.test(v.trim()))return;try{await DB.collection("pins").doc(uid).set({hash:await pinHash(uid,v.trim()),at:Date.now()});closeModal()}catch(e){}};
+    if(m.querySelector("#avf"))m.querySelector("#avf").onchange=async e=>{const f=e.target.files[0];if(!f)return;m.querySelector("#avm").textContent="Envoi…";
       const id=await uploadFile(f);if(!id){m.querySelector("#avm").textContent="La photo n’a pas pu être envoyée.";return}
       const {error}=await sb.from("members").update({avatar_path:id}).eq("email",uid);
       if(error){m.querySelector("#avm").textContent="La photo n’a pas pu être enregistrée.";return}
-      ME.avatar_path=id;const mm=MEMBERS.find(x=>x.email===uid);if(mm)mm.avatar_path=id;closeModal();renderMe();rerenderAll()};
+      ME.avatar_path=id;AUTH.avatar_path=id;const mm=MEMBERS.find(x=>x.email===uid);if(mm)mm.avatar_path=id;closeModal();renderMe();rerenderAll()};
   })}
 function loadProfiles(){}
 function allIds(){const o=[];["posts","partners","tasks","journal"].forEach(c=>S[c].forEach(x=>{["byId","doneById","createdById"].forEach(k=>x[k]&&o.push(x[k]))}));return o}
@@ -822,7 +864,7 @@ async function start(session){
   uid=(session.user.email||"").toLowerCase();
   const {data:mem,error:me1}=await sb.from("members").select("*");
   MEMBERS=(mem||[]).map(m=>Object.assign({},m,{email:String(m.email).toLowerCase()}));
-  ME=MEMBERS.find(m=>m.email===uid)||null;
+  AUTH=MEMBERS.find(m=>m.email===uid)||null;ME=AUTH;
   if(!ME){$("authForm").classList.add("hide");authMsg(`L’adresse ${uid} n’a pas accès à Kabine Studio. Demande à Amy de t’ajouter, puis reconnecte-toi.`,1);
     $("aMsg").insertAdjacentHTML("afterend",`<button class="btn ghost" style="margin-top:14px" id="aOut">Changer d’adresse</button>`);$("aOut").onclick=async()=>{await sb.auth.signOut();location.reload()};started=false;return}
   TEAM=MEMBERS.map(m=>m.name);MEMBERS.forEach(m=>{if(m.color)TCOL[m.name]=m.color});
@@ -831,7 +873,9 @@ async function start(session){
   try{await loadAll()}catch(e){$("nodb").classList.remove("hide");$("sync").textContent="";return}
   Object.keys(S).forEach(col=>{db.collection(col).onSnapshot(snap=>{S[col]=snap.docs.map(d=>Object.assign({_id:d.id},d.data()));R[col]()})});
   live();$("sync").textContent="";
+  const saved=MEMBERS.find(x=>x.email===ls.get(ACT_KEY));if(saved&&isShared())ME=saved;uid=ME.email;
   renderMe();rerenderAll();renderStrat();startShop();startSocial();
+  if(isShared())idleCheck();
 }
 const R={posts:()=>{renderPosts();renderHistory()},feed:renderFeed,stats:renderStats,partners:()=>{renderPartners();renderHistory()},tasks:renderTasks,journal:renderHistory,strategy:()=>{renderStrat();renderHistory()}};
 renderKpis();renderStats();renderTasks();renderPosts();renderFeed();renderPartners();renderHistory();renderStrat();
