@@ -156,7 +156,10 @@ textarea{min-height:110px;resize:vertical}
 #ctdoc .party{border:1px solid #e6ddd0;border-radius:8px;padding:10px 14px;margin:8px 0}
 #ctdoc .sig{display:flex;gap:30px;margin-top:20px}#ctdoc .sig>div{flex:1;border-top:1px solid #ccc;padding-top:8px;min-height:110px}
 @media(max-width:640px){#ctdoc{padding:26px 20px;margin:0}}
-@media print{body>*:not(#ctv){display:none!important}#ctv{position:static;background:#fff;overflow:visible}#ctv .ctbar{display:none}#ctdoc{box-shadow:none;margin:0;max-width:none;padding:0}@page{margin:18mm}#ctdoc h2{break-after:avoid}}
+#ctdoc .sgk img{display:block;max-width:200px;max-height:80px;margin-top:6px}
+#sigpad{position:fixed;inset:0;z-index:80;background:rgba(28,26,24,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+#sigpad .box{background:#fff;border-radius:16px;padding:16px;width:100%;max-width:520px}#sigpad canvas{width:100%;height:200px;border:1px dashed #b9a995;border-radius:10px;touch-action:none;background:#fff}
+@media print{body>*:not(#ctv){display:none!important}#ctv{position:static;background:#fff;overflow:visible}#ctv .ctbar{display:none}#ctdoc{box-shadow:none;margin:0;max-width:none;padding:16mm 18mm;-webkit-box-decoration-break:clone;box-decoration-break:clone}#ctdoc .sig,#ctdoc .party,#ctdoc li{break-inside:avoid}@page{margin:0}#ctdoc h2{break-after:avoid}}
 </style>
 <link rel="icon" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 </head>
@@ -287,7 +290,7 @@ textarea{min-height:110px;resize:vertical}
   </section>
 </main>
 
-<div id="ctv"><div class="ctbar"><button class="btn" id="ctPrint">Enregistrer en PDF / Imprimer</button><button class="btn" id="ctMail">Envoyer par e-mail</button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte directement en cliquant dessus avant de l’enregistrer. Pour le PDF : Imprimer, puis « Enregistrer en PDF » (sur iPhone : Imprimer, puis le bouton Partager).</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
+<div id="ctv"><div class="ctbar"><button class="btn" id="ctSign">✍️ Signer</button><button class="btn" id="ctPdf">⬇️ Enregistrer en PDF</button><button class="btn" id="ctMail">✉️ Envoyer avec Gmail</button><button class="hide" id="ctPrint"></button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte en cliquant dessus. ① Signer  ② Enregistrer en PDF : dans la fenêtre qui s’ouvre, choisis « Enregistrer au format PDF » comme destination  ③ Envoyer avec Gmail : l’e-mail s’ouvre déjà rempli, glisse-y le PDF et envoie.</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
 <div class="ov" id="ov"><div class="md" id="md"></div></div>
 
 <script type="module">
@@ -887,17 +890,34 @@ function contractHTML(c,v){
   ${v.extra?`${art("Conditions particulières")}<p>${E(v.extra).replace(/\n/g,"<br>")}</p>`:""}
   ${art("Bonne foi")}<p>Les parties collaborent dans un esprit de confiance, de respect et de transparence. En cas de difficulté ou de retard, elles échangent pour trouver une solution amiable. Si les contenus ne sont pas publiés dans le délai prévu sans raison valable, la Marque peut mettre fin à la collaboration.</p>
   ${art("Acceptation")}<p>Le présent contrat prend effet à sa signature par les deux parties. Fait en deux exemplaires${v.lieu?`, à ${E(v.lieu)}`:""}, le ${E(frDate(v.date))}.</p>
-  <div class="sig"><div><b>Pour Kabine Care</b><br>${E(BRAND.rep)}<br>Signature :</div><div><b>Pour la Créatrice</b><br>${E(who)}<br>Signature, précédée de « Lu et approuvé » :</div></div>`;
+  <div class="sig"><div><b>Pour Kabine Care</b><br>${E(BRAND.rep)}<br>Signature :<div class="sgk"></div></div><div><b>Pour la Créatrice</b><br>${E(who)}<br>Signature, précédée de « Lu et approuvé » :</div></div>`;
 }
 let CT=null;
 function showContract(c,v){CT={c,v};$("ctdoc").innerHTML=contractHTML(c,v);$("ctv").classList.add("on");$("ctv").scrollTop=0;
   if(c.id){const pr=S.partners.find(x=>x._id===c.id);if(pr&&(!pr.notes||!/Contrat généré/.test(pr.notes))){save("partners",c.id,Object.assign((()=>{const o=Object.assign({},pr);delete o._id;return o})(),{notes:((pr.notes||"")+"\nContrat généré le "+fmtD(today())+" par "+(me()||"")).trim()}))}}}
 $("ctClose").onclick=()=>$("ctv").classList.remove("on");
-$("ctPrint").onclick=()=>{const t=document.title;document.title="Contrat Kabine Care - "+((CT&&(CT.c.fullName||CT.c.name))||"");window.print();setTimeout(()=>document.title=t,1000)};
-$("ctMail").onclick=()=>{if(!CT)return;const c=CT.c,who=(c.fullName||c.name||"").split(" ")[0];
+const ctName=()=>"Contrat Kabine Care - "+((CT&&(CT.c.fullName||CT.c.name||CT.c.handle))||"");
+$("ctPrint").onclick=()=>{const t=document.title;document.title=ctName();window.print();setTimeout(()=>document.title=t,1000)};
+const SIGK=()=>"kabine-sig-"+(uid||"");
+function putSig(url){const b=$("ctdoc").querySelector(".sgk");if(b)b.innerHTML=url?`<img src="${url}" alt="Signature">`:""}
+$("ctSign").onclick=()=>{let saved=null;try{saved=localStorage.getItem(SIGK())}catch(e){}
+  const w=document.createElement("div");w.id="sigpad";w.innerHTML=`<div class="box"><b>Ta signature</b><div class="note" style="margin:4px 0 8px">Signe avec le doigt ou la souris dans le cadre.</div><canvas></canvas>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost" data-a="clear">Effacer</button>${saved?`<button class="btn ghost" data-a="saved">Reprendre ma signature enregistrée</button>`:""}<span style="flex:1"></span><button class="btn ghost" data-a="x">Annuler</button><button class="btn" data-a="ok">Valider</button></div></div>`;
+  document.body.appendChild(w);const cv=w.querySelector("canvas");const r=cv.getBoundingClientRect();cv.width=r.width*2;cv.height=r.height*2;const g=cv.getContext("2d");g.scale(2,2);g.lineWidth=2.2;g.lineCap="round";g.lineJoin="round";g.strokeStyle="#1C1A18";
+  let dn=false,used=false;const pt=e=>{const b=cv.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+  cv.onpointerdown=e=>{dn=true;used=true;cv.setPointerCapture(e.pointerId);const[x,y]=pt(e);g.beginPath();g.moveTo(x,y)};
+  cv.onpointermove=e=>{if(!dn)return;const[x,y]=pt(e);g.lineTo(x,y);g.stroke()};cv.onpointerup=()=>dn=false;
+  w.onclick=e=>{const a=e.target.dataset.a;if(!a)return;
+    if(a==="clear"){g.clearRect(0,0,cv.width,cv.height);used=false}
+    else if(a==="x")w.remove();
+    else if(a==="saved"){putSig(saved);w.remove()}
+    else if(a==="ok"){if(!used){w.remove();return}const url=cv.toDataURL("image/png");try{localStorage.setItem(SIGK(),url)}catch(e){}putSig(url);w.remove()}}};
+$("ctPdf").onclick=()=>$("ctPrint").onclick();
+$("ctMail").onclick=async()=>{if(!CT)return;const c=CT.c,who=(c.fullName||c.name||"").split(" ").filter(Boolean);const first=who.length>1&&who[0]===who[0].toUpperCase()?who[1]:who[0]||"";
   const sub="Contrat de collaboration Kabine Care"+(c.handle?" × @"+c.handle:"");
-  const body=`Bonjour${who?" "+who:""},\n\nMerci encore d’avoir accepté notre collaboration, nous sommes ravies 🐾\n\nVous trouverez ci-joint le contrat qui reprend ce que nous avons convenu : les produits offerts, les contenus attendus et les délais.\n\nPourriez-vous le relire, le signer en ajoutant « Lu et approuvé », et nous le renvoyer en réponse à cet e-mail ? Dès réception, nous vous envoyons la Routine.\n\nN’hésitez pas si vous avez la moindre question.\n\nBelle journée,\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`;
-  location.href="mailto:"+encodeURIComponent(c.email||"")+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body)};
+  const body=`Bonjour${first?" "+first:""},\n\nMerci encore d’avoir accepté notre collaboration, nous sommes ravies 🐾\n\nVous trouverez ci-joint le contrat qui reprend ce que nous avons convenu : les produits offerts, les contenus attendus et les délais.\n\nPourriez-vous le relire, le signer en ajoutant « Lu et approuvé », et nous le renvoyer en réponse à cet e-mail ? Dès réception, nous vous envoyons la Routine.\n\nN’hésitez pas si vous avez la moindre question.\n\nBelle journée,\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`;
+  window.open("https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(c.email||"")+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank","noopener");
+  if(c.id){const pr=S.partners.find(x=>x._id===c.id);if(pr){const st=JSON.parse(JSON.stringify(stepsOf(pr)));if(!st.contrat){st.contrat={at:today(),by:me()||null,byId:uid||null};const o=Object.assign({},pr);delete o._id;o.steps=st;o.status=phaseOf(o);o.updated=Date.now();await save("partners",c.id,o);alert2("Étape « Contrat envoyé » cochée dans sa fiche.")}}}};
 
 /* ---------- historique & anti-doublon ---------- */
 const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9@ ]+/g," ").replace(/\s+/g," ").trim();
