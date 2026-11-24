@@ -290,7 +290,7 @@ textarea{min-height:110px;resize:vertical}
   </section>
 </main>
 
-<div id="ctv"><div class="ctbar"><button class="btn" id="ctSign">① ✍️ Signer</button><button class="btn" id="ctPdf">② ⬇️ Enregistrer en PDF</button><button class="btn" id="ctMail">③ ✉️ Envoyer avec Gmail</button><button class="btn ghost" id="ctCopy">📋 Copier le message</button><button class="hide" id="ctPrint"></button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte en cliquant dessus. ① Signer  ② Enregistrer en PDF : dans la fenêtre qui s’ouvre, choisis « Enregistrer au format PDF » comme destination  ③ Envoyer avec Gmail : l’e-mail s’ouvre rempli, depuis kabinecare.com@gmail.com ; glisse-y le PDF et envoie. Pour répondre à un e-mail existant : « Copier le message », puis colle-le dans ta réponse.</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
+<div id="ctv"><div class="ctbar"><button class="btn" id="ctSign">① ✍️ Signer</button><button class="btn" id="ctPdf">② ⬇️ Enregistrer en PDF</button><button class="btn" id="ctMail">③ ✉️ Envoyer avec Gmail</button><button class="btn ghost" id="ctCopy">📋 Copier le message</button><button class="hide" id="ctPrint"></button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte en cliquant dessus. ① Signer  ② Enregistrer en PDF : dans la fenêtre qui s’ouvre, choisis « Enregistrer au format PDF » comme destination  ③ Envoyer avec Gmail : l’e-mail s’ouvre rempli dans le Gmail connecté à ce Chrome : vérifie que l’expéditeur est contact@kabinecare.com, glisse-y le PDF et envoie. Pour répondre à un e-mail existant : « Copier le message », puis colle-le dans ta réponse.</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
 <div class="ov" id="ov"><div class="md" id="md"></div></div>
 
 <script type="module">
@@ -917,7 +917,6 @@ $("ctSign").onclick=()=>{let saved=null;try{saved=localStorage.getItem(SIGK())}c
     else if(a==="saved"){putSig(saved);w.remove()}
     else if(a==="ok"){if(!used){w.remove();return}const url=cv.toDataURL("image/png");try{localStorage.setItem(SIGK(),url)}catch(e){}putSig(url);w.remove()}}};
 $("ctPdf").onclick=()=>$("ctPrint").onclick();
-const MAILFROM="kabinecare.com@gmail.com";
 function ctMailText(){const c=CT.c,who=(c.fullName||c.name||"").split(" ").filter(Boolean);const first=who.length>1&&who[0]===who[0].toUpperCase()?who[1]:who[0]||"";
   const sub="Contrat de collaboration Kabine Care"+(c.handle?" × @"+c.handle:"");
   const body=`Bonjour${first?" "+first:""},\n\nMerci beaucoup pour vos informations, et encore merci d’avoir accepté notre collaboration, nous sommes ravies 🐾\n\nVous trouverez ci-joint le contrat qui reprend ce que nous avons convenu : les produits offerts, les contenus attendus et les délais.\n\nPourriez-vous le relire, le signer en ajoutant « Lu et approuvé », puis nous le renvoyer en réponse à cet e-mail ? Dès réception du contrat signé, nous préparons l’envoi de votre colis.\n\nN’hésitez pas si vous avez la moindre question.\n\nBelle journée,\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`;
@@ -925,7 +924,7 @@ function ctMailText(){const c=CT.c,who=(c.fullName||c.name||"").split(" ").filte
 async function markSent(){const c=CT.c;if(!c.id)return;const pr=S.partners.find(x=>x._id===c.id);if(!pr)return;const st=JSON.parse(JSON.stringify(stepsOf(pr)));if(st.contrat)return;
   st.contrat={at:today(),by:me()||null,byId:uid||null};const o=Object.assign({},pr);delete o._id;o.steps=st;o.status=phaseOf(o);o.updated=Date.now();await save("partners",c.id,o);alert2("Étape « Contrat envoyé » cochée dans sa fiche (décoche-la si tu ne l’envoies pas).")}
 $("ctMail").onclick=()=>{if(!CT)return;const {sub,body}=ctMailText();
-  window.open("https://mail.google.com/mail/?authuser="+encodeURIComponent(MAILFROM)+"&view=cm&fs=1&to="+encodeURIComponent(CT.c.email||"")+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank","noopener");markSent()};
+  window.open("https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(CT.c.email||"")+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank","noopener");markSent()};
 $("ctCopy").onclick=async()=>{if(!CT)return;const {body}=ctMailText();const b=$("ctCopy");try{await navigator.clipboard.writeText(body);b.textContent="✓ Message copié";setTimeout(()=>b.textContent="📋 Copier le message",2500)}catch(e){}};
 
 /* ---------- historique & anti-doublon ---------- */
