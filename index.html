@@ -267,7 +267,8 @@ textarea{min-height:110px;resize:vertical}
   <!-- PARTENARIATS -->
   <section id="v-partenariats" class="hide">
     <div class="ct"><div><h2>Partenariats</h2><p class="sub" style="margin:0">Influenceuses, collaborations et contrats.</p></div><button class="btn" id="newPartner">+ Nouveau partenariat</button></div>
-    <div class="filters" id="pfilters" style="margin-top:14px"></div>
+    <input class="srch" id="psq" type="search" placeholder="Rechercher une créatrice : nom, @compte, chien, code…" style="margin-top:14px">
+    <div class="filters" id="pfilters" style="margin-top:10px"></div>
     <div class="plist" id="plist"></div>
   </section>
 
@@ -356,7 +357,7 @@ function renderKpis(){
   const lastStat=[...S.stats].sort((a,b)=>a.date<b.date?1:-1)[0]||{};
   const week=new Date();week.setDate(week.getDate()+7);const wk=week.toISOString().slice(0,10);
   const upcoming=S.posts.filter(p=>p.status!=="publie"&&p.date&&p.date>=today()&&p.date<=wk).length;
-  const active=S.partners.filter(p=>!["À contacter","Terminé","En pause","Refus / sans réponse"].includes(phaseOf(p))).length;
+  const active=S.partners.filter(p=>!["À contacter","Terminé","En pause","Clôturé"].includes(phaseOf(p))).length;
   let s30="—",o30="—";
   if(shop&&shop.rows){const last4=shop.rows.slice(-4);s30=fmtE(last4.reduce((a,r)=>a+Number(r[1]||0),0));o30=fmtN(last4.reduce((a,r)=>a+Number(r[2]||0),0));}
   const k=[["Ventes site (4 sem.)",s30,"Shopify : prochaine version"],["Commandes (4 sem.)",o30,"Shopify"],
@@ -711,10 +712,11 @@ const PSTEPS=[
  ["bilan","Bilan fait (ventes du code)","Faire le bilan : ventes avec son code"]];
 const PWAIT={reponse:["contact",7],signe:["contrat",5],video:["colis",15],reel:["valide",5],stories:["valide",5]};
 const PPHASES=[["À contacter",0,0],["Message envoyé",1,1],["Contrat",2,4],["Code & colis",5,6],["Contenu",7,10],["Repartage & bilan",11,12],["Terminé",13,13]];
-const POUT=["En cours","En pause","Refus","Sans réponse"];
-const PHCLS={"À contacter":"s0","Message envoyé":"s1","Contrat":"s3","Code & colis":"s5","Contenu":"s2","Repartage & bilan":"s4","Terminé":"s7","En pause":"s0","Refus / sans réponse":"s6"};
+const POUT=["En cours","En pause","Pas adapté","Refus","Sans réponse"];
+const OUTTXT={"Pas adapté":"Pas adapté pour l’instant","Refus":"A refusé","Sans réponse":"Sans réponse","En pause":"En pause"};
+const PHCLS={"À contacter":"s0","Message envoyé":"s1","Contrat":"s3","Code & colis":"s5","Contenu":"s2","Repartage & bilan":"s4","Terminé":"s7","En pause":"s0","Clôturé":"s6"};
 const OLDST={"Message envoyé":1,"Relance":1,"Accepté":2,"Colis envoyé":7,"Contenu publié":10,"Terminé":13};
-const PST=PPHASES.map(x=>x[0]).concat(["En pause","Refus / sans réponse"]);
+const PST=PPHASES.map(x=>x[0]).concat(["En pause","Clôturé"]);
 let pview=window.innerWidth<700?"list":"board";
 function stepsOf(p){
   if(p&&p.steps)return p.steps;const o={};if(!p)return o;
@@ -724,7 +726,7 @@ function stepsOf(p){
 }
 function outcomeOf(p){if(p.outcome)return p.outcome;if(p.status==="Refus / sans réponse")return "Sans réponse";return "En cours"}
 function nextIdx(st){const i=PSTEPS.findIndex(s=>!st[s[0]]);return i<0?PSTEPS.length:i}
-function phaseOf(p){const out=outcomeOf(p);if(out==="En pause")return "En pause";if(out!=="En cours")return "Refus / sans réponse";
+function phaseOf(p){const out=outcomeOf(p);if(out==="En pause")return "En pause";if(out!=="En cours")return "Clôturé";
   const n=nextIdx(stepsOf(p));return (PPHASES.find(x=>n>=x[1]&&n<=x[2])||PPHASES[0])[0]}
 const daysSince=d=>d?Math.floor((Date.now()-new Date(d+"T12:00:00").getTime())/864e5):0;
 function pNext(p){
@@ -737,7 +739,7 @@ function lastStep(p){const st=stepsOf(p);let best=null;PSTEPS.forEach(([k,l])=>{
 function pCard(p){
   const st=stepsOf(p),n=PSTEPS.filter(s=>st[s[0]]).length,ph=phaseOf(p),nx=pNext(p),ls=lastStep(p);
   return `<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${p.handle?"@"+esc(String(p.handle).replace(/^@/,"")):esc(p.type||"")}${p.animal?" · "+esc(p.animal):""}</div>
-  ${pview==="list"?`<span class="st ${PHCLS[ph]||"s0"}">${esc(ph)}</span>`:""}
+  ${pview==="list"&&outcomeOf(p)==="En cours"?`<span class="st ${PHCLS[ph]||"s0"}">${esc(ph)}</span>`:""}${outcomeOf(p)!=="En cours"?`<span class="st ${outcomeOf(p)==="En pause"?"s0":outcomeOf(p)==="Pas adapté"?"s5":"s6"}">${esc(OUTTXT[outcomeOf(p)])}</span>${p.reason?`<div class="m muted" style="margin-top:6px">« ${esc(p.reason)} »</div>`:""}`:""}
   <div class="bar" title="${n} étapes sur ${PSTEPS.length}"><i style="width:${Math.round(100*n/PSTEPS.length)}%"></i></div>
   ${nx?`<div class="nx ${nx.late?"late":""}">${nx.late?`⏰ À relancer : ${esc(nx.todo.replace(/^Attendre /,""))} depuis ${nx.late} j`:(nx.wait?"⏳ ":"→ ")+esc(nx.todo)}</div>`:""}
   <div style="margin-top:6px">${p.code?`<span class="tag">${st.code?"✓":"⚠︎"} ${esc(p.code)}</span>`:""}${p.contract?`<span class="tag">📄 Signé</span>`:""}</div>
@@ -751,14 +753,16 @@ function renderPartners(){
     [["all",`Tous (${S.partners.length})`],["todo",`À faire par nous (${todo})`],["late",`⏰ À relancer (${late})`]].map(([k,l])=>`<span class="chip ${pfilter===k?"on":""}" data-pf="${k}">${l}</span>`).join("")+
     (pview==="list"?PST.filter(s=>cnt[s]).map(s=>`<span class="chip ${pfilter===s?"on":""}" data-pf="${esc(s)}">${esc(s)} (${cnt[s]})</span>`).join(""):"");
   const keep=p=>pfilter==="all"||(pfilter==="late"?(pNext(p)||{}).late:pfilter==="todo"?(()=>{const n=pNext(p);return n&&!n.wait&&phaseOf(p)!=="À contacter"})():phaseOf(p)===pfilter);
-  const list=S.partners.filter(keep).sort((a,b)=>PST.indexOf(phaseOf(a))-PST.indexOf(phaseOf(b))||String(a.name).localeCompare(String(b.name)));
+  const sq=norm(($("psq")||{}).value||"");const hit=p=>!sq||norm([p.name,p.handle,p.fullName,p.dogName,p.animal,p.code,p.email,p.notes,p.reason].join(" ")).includes(sq);
+  const list=S.partners.filter(p=>keep(p)&&hit(p)).sort((a,b)=>PST.indexOf(phaseOf(a))-PST.indexOf(phaseOf(b))||String(a.name).localeCompare(String(b.name)));
   if(pview==="board"){
-    const cols=PST.filter(s=>s!=="En pause"&&s!=="Refus / sans réponse"||list.some(p=>phaseOf(p)===s));
+    const cols=PST.filter(s=>s!=="En pause"&&s!=="Clôturé"||list.some(p=>phaseOf(p)===s));
     $("plist").className="board";
     $("plist").innerHTML=cols.map(c=>{const it=list.filter(p=>phaseOf(p)===c);return `<div class="col"><h4>${esc(c)}<span>${it.length}</span></h4>${it.map(pCard).join("")||`<div class="muted" style="padding:6px">—</div>`}</div>`}).join("");
   }else{$("plist").className="plist";$("plist").innerHTML=list.length?list.map(pCard).join(""):`<div class="muted">Aucun partenariat ici.</div>`}
   renderKpis();if(typeof renderTodo==="function")renderTodo();
 }
+$("psq").addEventListener("input",renderPartners);
 $("pfilters").addEventListener("click",e=>{const v=e.target.closest("[data-pv]");if(v){pview=v.dataset.pv;if(pview==="board"&&!["all","todo","late"].includes(pfilter))pfilter="all";renderPartners();return}
   const c=e.target.closest("[data-pf]");if(c){pfilter=c.dataset.pf;renderPartners()}});
 $("plist").addEventListener("click",e=>{const c=e.target.closest(".pc");if(c)editPartner(S.partners.find(p=>p._id===c.dataset.id))});
@@ -784,6 +788,7 @@ function editPartner(p){
   <div class="fld"><label>Compte (@)</label><input type="text" id="xh" value="${esc(p.handle||"")}"></div></div>
   <div class="f2"><div class="fld"><label>Type</label><select id="xt">${opts(PTYPES,p.type)}</select></div>
   <div class="fld"><label>Situation</label><select id="xs">${opts(POUT,outcomeOf(p))}</select></div></div>
+  <div class="fld" id="xrw"><label>Raison (gardée dans sa fiche et l’historique)</label><input type="text" id="xr" value="${esc(p.reason||"")}" placeholder="Ex. ses chiens ne se laissent pas toucher les pattes"><div class="note">La fiche et toutes les étapes déjà faites sont conservées. Repasse sur « En cours » pour la relancer plus tard.</div></div>
   <div class="mbox" style="margin-bottom:10px"><h4>Avancement</h4><div class="note" style="margin:0 0 6px">Coche chaque étape quand elle est faite : la date et ton prénom s’enregistrent tout seuls.</div><div id="xsteps">${stepsHTML(steps)}</div></div>
   <div class="mbox" style="margin-bottom:10px"><h4>Code promo de sa communauté</h4>
   <div style="display:flex;gap:8px;align-items:center"><input type="text" id="xc" value="${esc(p.code||"")}" placeholder="ex. SAMSKY10" style="flex:1;text-transform:uppercase"><button class="btn ghost" id="xcs" type="button">Proposer</button></div>
@@ -802,7 +807,8 @@ function editPartner(p){
   <div class="mfoot"><div>${p._id?`<button class="btn danger" id="dl">Supprimer</button>`:""}</div><div style="display:flex;gap:8px"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div></div>`,m=>{
     const q=s=>m.querySelector(s);q("#cx").onclick=closeModal;
     const read=()=>({name:q("#xn").value.trim()||p.name||"",handle:q("#xh").value.trim(),type:q("#xt").value,outcome:q("#xs").value,steps,code:q("#xc").value.trim().toUpperCase(),codeLive:!!steps.code,commission:q("#xm").value===""?null:Number(q("#xm").value),date:(steps.contact&&steps.contact.at)||p.date||"",animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null});
-    const withStatus=d=>Object.assign(d,{status:phaseOf(d)});
+    const swr=()=>q("#xrw").classList.toggle("hide",q("#xs").value==="En cours");swr();q("#xs").onchange=swr;
+    const withStatus=d=>{const o=outcomeOf(p);d.reason=q("#xr").value.trim();d.outcomeAt=d.outcome===o&&p.outcomeAt?p.outcomeAt:(d.outcome==="En cours"?null:{at:today(),by:me()||null,byId:uid||null});return Object.assign(d,{status:phaseOf(d)})};
     q("#xsteps").addEventListener("change",async e=>{const k=e.target.dataset.st;if(!k)return;
       if(e.target.checked)steps[k]={at:today(),by:me()||null,byId:uid||null};else delete steps[k];
       if(k==="signe"&&e.target.checked&&!contract)q("#xv").innerHTML="Pense à ajouter le contrat signé ici 👇";
@@ -974,7 +980,7 @@ function historyItems(){
   S.strategy.filter(x=>x.status==="Terminé").forEach(x=>it.push({date:x.doneAt||x.end||"",cat:"Stratégie",title:x.title,details:[x.type,x.result].filter(Boolean).join(" · "),lesson:x.lesson,by:x.by,byId:x.byId,kind:"s",id:x._id}));
   S.tasks.filter(t=>t.done).forEach(t=>it.push({date:t.doneAt||"",cat:"Tâche faite",title:t.text,by:t.by,byId:t.byId,kind:"t",id:t._id}));
   S.posts.filter(p=>p.status==="publie").forEach(p=>it.push({date:p.date||"",cat:"Contenu",title:"Publié : "+(p.title||"Sans titre"),details:[netList(p.network).join(" + "),p.format].filter(Boolean).join(" · "),by:p.publishedBy||p.by,byId:p.publishedById||p.byId,kind:"p",id:p._id}));
-  S.partners.forEach(p=>{const st=stepsOf(p);const h=p.handle?"@"+String(p.handle).replace(/^@/,""):"";PSTEPS.forEach(([k,l])=>{const x=st[k];if(x)it.push({date:x.at||"",cat:"Partenariat",title:`${p.name} — ${l}`,details:[h,k==="code"&&p.code?"code "+p.code:""].filter(Boolean).join(" · "),by:x.by,byId:x.byId,kind:"r",id:p._id})})});
+  S.partners.forEach(p=>{const st=stepsOf(p);const h=p.handle?"@"+String(p.handle).replace(/^@/,""):"";if(p.outcomeAt&&outcomeOf(p)!=="En cours")it.push({date:p.outcomeAt.at||"",cat:"Partenariat",title:`${p.name} — ${OUTTXT[outcomeOf(p)]||outcomeOf(p)}`,details:[h,p.reason].filter(Boolean).join(" · "),by:p.outcomeAt.by,byId:p.outcomeAt.byId,kind:"r",id:p._id});PSTEPS.forEach(([k,l])=>{const x=st[k];if(x)it.push({date:x.at||"",cat:"Partenariat",title:`${p.name} — ${l}`,details:[h,k==="code"&&p.code?"code "+p.code:""].filter(Boolean).join(" · "),by:x.by,byId:x.byId,kind:"r",id:p._id})})});
   return it.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 }
 function findSimilar(text){
