@@ -669,43 +669,56 @@ function editPartner(p){
 /* ---------- contrats ---------- */
 const BRAND={name:"Kabine Care",rep:"Aminata Magali Kaba",siret:"909 345 134 00037",addr:"Lieu-dit Piladeuil, 33390 Saint-Androny",city:"Saint-Androny"};
 const frDate=d=>{try{return new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}catch(e){return d}};
+const codeFrom=h=>(String(h||"").replace(/^@/,"").toUpperCase().replace(/[^A-Z0-9]/g,"")||"CODE")+"10";
 function contractForm(c){
-  const dog=c.dogName||"son chien";
-  openModal(`<h3>Contrat : ${esc(c.fullName||c.name||"")}</h3>
-  <div class="note" style="margin-top:0">Vérifie les conditions, puis clique sur « Voir le contrat ». Tu pourras encore modifier le texte avant le PDF.</div>
+  const pr=c.id&&S.partners.find(x=>x._id===c.id);const code=(pr&&pr.code)||codeFrom(c.handle);
+  openModal(`<h3>Contrat : ${esc(c.fullName||c.name||c.handle||"")}</h3>
+  <div class="note" style="margin-top:0">Rien n’est obligatoire : ce qui reste vide n’apparaît pas dans le contrat. Tu pourras encore modifier le texte avant le PDF.</div>
+  <div class="f2"><div class="fld"><label>Code promo de sa communauté</label><input type="text" id="cc" value="${esc(code)}"></div><div class="fld"><label>Réduction</label><input type="text" id="cr" value="10 %"></div></div>
   <div class="f2"><div class="fld"><label>Date du contrat</label><input type="date" id="cd" value="${today()}"></div><div class="fld"><label>Fait à</label><input type="text" id="cl" value="${esc(BRAND.city)}"></div></div>
   <div class="fld"><label>Produits envoyés (un par ligne)</label><textarea id="cp" style="min-height:70px">1 Mousse nettoyante sans rinçage Kabine Care
 1 Lingette microfibre Kabine Care
 1 Baume protecteur Kabine Care</textarea></div>
   <div class="fld"><label>Valeur des produits (prix public TTC)</label><input type="text" id="cv" value="41,90 €"></div>
-  <div class="fld"><label>Contenus attendus (un par ligne)</label><textarea id="ck" style="min-height:70px">1 Reel publié sur son compte Instagram
-2 à 3 stories Instagram</textarea></div>
-  <div class="f2"><div class="fld"><label>Délai de publication</label><input type="text" id="ct" value="30 jours"></div><div class="fld"><label>Reel en ligne au moins</label><input type="text" id="cm" value="3 mois"></div></div>
-  <div class="fld"><label>Utilisation des vidéos par Kabine Care</label><select id="cu"><option>pour une durée illimitée</option><option>pendant 2 ans</option><option>pendant 1 an</option></select></div>
+  <div class="f2"><div class="fld"><label>Nombre de stories</label><input type="text" id="cs" value="2 à 3"></div><div class="fld"><label>Délai de publication</label><input type="text" id="ct" value="15 jours"></div></div>
+  <div class="f2"><div class="fld"><label>Reel en ligne au moins</label><input type="text" id="cm" value="3 mois"></div><div class="fld"><label>Utilisation des vidéos</label><select id="cu"><option>pour une durée illimitée</option><option>pendant 2 ans</option><option>pendant 1 an</option></select></div></div>
+  <div class="fld"><label>Conditions particulières (facultatif)</label><textarea id="cx2" style="min-height:50px" placeholder="Ex. deux chiens : une Routine pour chacun"></textarea></div>
   <div class="mfoot"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="go">Voir le contrat</button></div>`,m=>{
     const q=k=>m.querySelector(k);q("#cx").onclick=closeModal;
-    q("#go").onclick=()=>{const v={date:q("#cd").value||today(),lieu:q("#cl").value.trim(),prods:q("#cp").value.split("\n").map(x=>x.trim()).filter(Boolean),valeur:q("#cv").value.trim(),livr:q("#ck").value.split("\n").map(x=>x.trim()).filter(Boolean),delai:q("#ct").value.trim(),duree:q("#cm").value.trim(),usage:q("#cu").value};
+    q("#go").onclick=async()=>{const v={code:q("#cc").value.trim().toUpperCase(),reduc:q("#cr").value.trim(),date:q("#cd").value||today(),lieu:q("#cl").value.trim(),prods:q("#cp").value.split("\n").map(x=>x.trim()).filter(Boolean),valeur:q("#cv").value.trim(),stories:q("#cs").value.trim(),delai:q("#ct").value.trim(),duree:q("#cm").value.trim(),usage:q("#cu").value,extra:q("#cx2").value.trim()};
+      if(pr&&v.code&&pr.code!==v.code){const o=Object.assign({},pr);delete o._id;o.code=v.code;try{await save("partners",pr._id,o)}catch(e){}}
       closeModal();showContract(c,v)};
   });
 }
 function contractHTML(c,v){
-  const E=esc,who=c.fullName||c.name||"",dog=c.dogName?("son chien "+c.dogName):"son chien",h=c.handle?("@"+c.handle):"son compte Instagram";
+  const E=esc,h=c.handle?("@"+c.handle):"",who=c.fullName||c.name||h||"La Créatrice";
+  const dn=(c.dogName||"").trim(),plural=/\bet\b|,|&/.test(dn);
+  const dog=dn?(plural?"ses chiens "+dn:"son chien "+dn):"son ou ses chiens";
+  const lines=[];if(c.address)lines.push(E(c.address).replace(/\n/g,"<br>"));if(c.email)lines.push("E-mail : "+E(c.email));
+  const acct=h?`, via son compte Instagram <b>${E(h)}</b>`:"";
+  let n=0;const art=t=>`<h2>Article ${++n} – ${t}</h2>`;
   return `<h1>CONTRAT DE COLLABORATION</h1><p class="sub">Échange de produits contre création et publication de contenus</p>
   <h2>Entre les soussignés</h2>
   <div class="party"><b>${E(BRAND.name)}</b>, représentée par <b>${E(BRAND.rep)}</b><br>SIRET : ${E(BRAND.siret)}<br>Adresse : ${E(BRAND.addr)}<br>Ci-après dénommée « la Marque »,</div>
   <p style="text-align:center">et</p>
-  <div class="party"><b>${E(who)}</b><br>${E(c.address||"Adresse : ……………………………………………").replace(/\n/g,"<br>")}<br>E-mail : ${E(c.email||"……………………………")}<br>Créatrice de contenus mettant en scène ${E(dog)}, via son compte Instagram <b>${E(h)}</b>.<br>Ci-après dénommée « la Créatrice ».</div>
-  <h2>Article 1 – Objet</h2><p>La Marque confie à la Créatrice la réalisation et la publication de contenus présentant la routine de soins <b>Kabine Care</b>. En contrepartie, la Marque offre à la Créatrice les produits listés à l’article 2. Cette collaboration ne donne lieu à aucune rémunération financière.</p>
-  <h2>Article 2 – Produits offerts</h2><p>La Marque s’engage à envoyer gratuitement à la Créatrice :</p><ul>${v.prods.map(x=>`<li>${E(x)}</li>`).join("")}</ul>
-  <p>Valeur des produits (prix public TTC) : <b>${E(v.valeur)}</b>. Ces produits deviennent la propriété de la Créatrice et n’ont pas à être retournés.</p>
-  <h2>Article 3 – Contenus attendus</h2><p>La Créatrice s’engage à réaliser et publier sur ${E(h)} :</p><ul>${v.livr.map(x=>`<li>${E(x)}</li>`).join("")}</ul>
-  <p>Ces contenus mettent naturellement en scène l’utilisation de la routine Kabine Care avec ${E(dog)}, dans un esprit authentique et bienveillant, conforme à l’univers de la marque. Chaque publication identifie le compte <b>@kabinecare</b>. Les idées de contenu peuvent être définies ensemble avant le tournage.</p>
-  <h2>Article 4 – Délais</h2><p>Les contenus sont publiés dans un délai maximal de <b>${E(v.delai)}</b> à compter de la réception des produits, sauf accord différent entre les parties. Le Reel reste en ligne sur le compte de la Créatrice pendant au moins <b>${E(v.duree)}</b>.</p>
-  <h2>Article 5 – Transparence</h2><p>Conformément à la loi n° 2023-451 du 9 juin 2023 encadrant l’influence commerciale, chaque contenu porte de façon claire la mention « Collaboration commerciale » (ou utilise l’outil de partenariat rémunéré d’Instagram). La Créatrice ne présente pas les produits comme ayant des effets médicaux ou thérapeutiques.</p>
-  <h2>Article 6 – Fichiers et utilisation des contenus</h2><p>La Créatrice transmet à la Marque les fichiers vidéo en bonne qualité, sans musique protégée. Elle autorise la Marque, ${E(v.usage)}, pour le monde entier et sans rémunération complémentaire, à utiliser ces contenus, ainsi que l’image de ${E(dog)} qui y figure, sur ses supports de communication : Instagram, Facebook, TikTok, Pinterest, site internet, newsletter, publicités en ligne (Meta Ads, TikTok Ads, Google Ads ou équivalent, y compris en publicité partenaire depuis le compte de la Créatrice si elle fournit le code correspondant), supports imprimés ou numériques.</p>
-  <h2>Article 7 – Adaptation des contenus</h2><p>La Marque peut adapter les contenus aux contraintes de diffusion (recadrage, sous-titres, ajout de texte ou de musique libre de droits, découpage, changement de format ou de durée), dans le respect de l’image de la Créatrice et de son chien.</p>
-  <h2>Article 8 – Bonne foi</h2><p>Les parties collaborent dans un esprit de confiance, de respect et de transparence. En cas de difficulté ou de retard, elles échangent pour trouver une solution amiable. Si les contenus ne sont pas publiés dans le délai prévu sans raison valable, la Marque peut mettre fin à la collaboration.</p>
-  <h2>Article 9 – Acceptation</h2><p>Le présent contrat prend effet à sa signature par les deux parties. Fait en deux exemplaires, à ${E(v.lieu)}, le ${E(frDate(v.date))}.</p>
+  <div class="party"><b>${E(who)}</b>${lines.length?"<br>"+lines.join("<br>"):""}<br>Créatrice de contenus mettant en scène ${E(dog)}${acct}.<br>Ci-après dénommée « la Créatrice ».</div>
+  ${art("Objet")}<p>La Marque souhaite faire découvrir la routine de soins <b>Kabine Care</b> à la communauté de la Créatrice. Elle lui offre pour cela les produits listés ci-dessous, en échange de la création et de la publication de contenus qui la recommandent. Cette collaboration ne donne lieu à aucune rémunération financière.</p>
+  ${art("Produits offerts")}<p>La Marque s’engage à envoyer gratuitement à la Créatrice :</p><ul>${v.prods.map(x=>`<li>${E(x)}</li>`).join("")}</ul>
+  ${v.valeur?`<p>Valeur des produits (prix public TTC) : <b>${E(v.valeur)}</b>.</p>`:""}<p>Ces produits deviennent la propriété de la Créatrice et n’ont pas à être retournés.</p>
+  ${art("Contenus attendus")}<p>La Créatrice s’engage à réaliser :</p><ul>
+  <li><b>1 Reel</b> mettant en scène l’utilisation de la routine Kabine Care avec ${E(dog)} ;</li>
+  ${v.stories?`<li><b>${E(v.stories)} stories</b> Instagram présentant les produits, avec un sticker lien vers <b>kabinecare.com</b>${v.code?` et son code promo <b>${E(v.code)}</b>`:""}.</li>`:""}</ul>
+  <p><b>Authenticité.</b> La Créatrice tourne et monte le Reel librement, dans son propre style et en toute authenticité. La Marque fait confiance à son ton et à son univers. Les idées peuvent être échangées en amont si la Créatrice le souhaite.</p>
+  <p><b>Validation.</b> Avant publication, la Créatrice envoie le Reel à la Marque. Il est publié une fois validé par les deux parties. La Marque s’engage à répondre dans un délai de 48 heures.</p>
+  <p><b>Publication en collaboration.</b> Le Reel est publié avec la fonction « Collaboration » d’Instagram, en invitant le compte <b>@kabinecare</b> comme collaborateur, afin qu’il apparaisse à la fois sur le compte de la Créatrice et sur celui de la Marque.</p>
+  ${v.code?`${art("Code promo de la communauté")}<p>La Marque crée pour la communauté de la Créatrice le code <b>${E(v.code)}</b>${v.reduc?`, qui offre <b>${E(v.reduc)}</b> de réduction`:""} sur kabinecare.com. La Créatrice peut le partager librement dans ses contenus. Ce code permet aussi aux deux parties de suivre les résultats de la collaboration. Selon ces résultats, la Marque pourra proposer à la Créatrice un partenariat plus long ou un programme d’affiliation rémunéré, sans aucune obligation pour l’une ou l’autre partie.</p>`:""}
+  ${art("Délais")}<p>${v.delai?`Le Reel et les stories sont publiés dans un délai maximal de <b>${E(v.delai)}</b> à compter de la réception des produits, sauf accord différent entre les parties.`:"Les dates de publication sont convenues ensemble entre les parties."}${v.duree?` Le Reel reste en ligne sur le compte de la Créatrice pendant au moins <b>${E(v.duree)}</b>.`:""}</p>
+  ${art("Transparence")}<p>Conformément à la loi n° 2023-451 du 9 juin 2023 encadrant l’influence commerciale, chaque contenu porte de façon claire la mention « Collaboration commerciale » (ou utilise l’outil de partenariat rémunéré d’Instagram). La Créatrice ne présente pas les produits comme ayant des effets médicaux ou thérapeutiques.</p>
+  ${art("Fichiers et utilisation des contenus")}<p>La Créatrice transmet à la Marque le fichier vidéo du Reel en bonne qualité, sans musique protégée. Elle autorise la Marque, ${E(v.usage)}, pour le monde entier et sans rémunération complémentaire, à utiliser ces contenus, ainsi que l’image de ${E(dog)} qui y figure, sur ses supports de communication : Instagram, Facebook, TikTok, Pinterest, site internet, newsletter, publicités en ligne (Meta Ads, TikTok Ads, Google Ads ou équivalent, y compris en publicité partenaire depuis le compte de la Créatrice si elle fournit le code correspondant), supports imprimés ou numériques.</p>
+  ${art("Adaptation des contenus")}<p>La Marque peut adapter les contenus aux contraintes de diffusion (recadrage, sous-titres, ajout de texte ou de musique libre de droits, découpage, changement de format ou de durée), dans le respect de l’image de la Créatrice et de ses animaux.</p>
+  ${v.extra?`${art("Conditions particulières")}<p>${E(v.extra).replace(/\n/g,"<br>")}</p>`:""}
+  ${art("Bonne foi")}<p>Les parties collaborent dans un esprit de confiance, de respect et de transparence. En cas de difficulté ou de retard, elles échangent pour trouver une solution amiable. Si les contenus ne sont pas publiés dans le délai prévu sans raison valable, la Marque peut mettre fin à la collaboration.</p>
+  ${art("Acceptation")}<p>Le présent contrat prend effet à sa signature par les deux parties. Fait en deux exemplaires${v.lieu?`, à ${E(v.lieu)}`:""}, le ${E(frDate(v.date))}.</p>
   <div class="sig"><div><b>Pour Kabine Care</b><br>${E(BRAND.rep)}<br>Signature :</div><div><b>Pour la Créatrice</b><br>${E(who)}<br>Signature, précédée de « Lu et approuvé » :</div></div>`;
 }
 let CT=null;
@@ -929,6 +942,15 @@ function live(){
   }).subscribe();
 }
 
+const SEED_ID="2026-11-24-influence", SEED={"codes": {"ourkcya": "OURKCYA10", "pimstheaussie": "PIMSTHEAUSSIE10", "pac_o_kinai": "PACOKINAI10", "marcelthechocolab": "MARCEL10", "falcolebergerallemand": "FALCO10", "rox_et_rio64": "ROXETRIO10", "ifyoulivewithus": "IFYOULIVEWITHUS10", "shibakita_story": "SHIBAKITA10", "samskyhezia": "SAMSKY10", "unboodenous": "UNBOODENOUS10", "damon.the.eurasier": "DAMON10", "nouba.family": "NOUBA10"}, "ins": [{"c": "strategy", "i": "st05", "d": {"title": "Vague influence Instagram n°1 : 12 créatrices", "type": "Objectif", "status": "En cours", "start": "2026-11-23", "end": "2026-12-31", "owner": "Kayliah", "unit": "contenus publiés", "target": 12, "current": 0, "details": "Routine offerte contre 1 Reel publié en Collab avec @kabinecare + 2 à 3 stories avec sticker lien et code promo personnel (-10 %). Publication visée avant le 15 décembre pour profiter de Noël (angle cadeau pour son chien).", "created": 5}}, {"c": "strategy", "i": "st06", "d": {"title": "Process influence : de l'acceptation au bilan", "type": "Plan d’action", "status": "En cours", "owner": "Kayliah", "details": "1. Elle accepte → récupérer nom, adresse, e-mail.\n2. Fiche Partenariats → « Générer le contrat » → PDF → e-mail.\n3. Contrat signé reçu → l'ajouter à la fiche, statut « Accepté ».\n4. Envoyer la Routine → statut « Colis envoyé ».\n5. Recevoir le Reel → valider sous 48 h → publication en Collab.\n6. Repartager en story sur @kabinecare + À la une « Ils l'ont testée ».\n7. Relancer 10 jours après réception si rien n'est publié.", "created": 6}}, {"c": "strategy", "i": "st07", "d": {"title": "Bilan au 31/12 : les 3 meilleures passent en partenariat long / affiliation", "type": "Objectif", "status": "À lancer", "start": "2026-12-31", "end": "2027-01-10", "owner": "Amy", "details": "Par créatrice : publié ou non, vues, ventes avec son code (Shopify › Remises). Les 3 meilleures : partenariat récurrent avec commission. Les autres : remerciements, vague suivante.", "created": 7}}, {"c": "strategy", "i": "st08", "d": {"title": "Vague 2 (janvier) : Routine pattes complète avec le coupe-griffes", "type": "Offre / promo", "status": "Idée", "start": "2027-01-05", "owner": "Amy", "details": "Nettoyer, couper, hydrater : mousse + lingette + coupe-griffes + baume à 59,90 € (meilleure marge, ≈ 38 €). Offre à envoyer aux créatrices de la vague 2.", "created": 8}}, {"c": "strategy", "i": "st09", "d": {"title": "TikTok Shop : affiliation ouverte + lives vendeurs (plus tard)", "type": "Idée", "status": "Idée", "owner": "Amy", "details": "Collaboration ouverte en affiliation (15-20 %) sur la Routine, échantillons aux affiliés sérieux, lives vendeurs sur @kabinecare.com annoncés par @kabinecare. Chaque vente aide à sortir de la période probatoire. Pousser la Routine (41,90 €), pas les produits seuls (marge trop faible après frais TikTok).", "created": 9}}, {"c": "strategy", "i": "st10", "d": {"title": "Ce qu'on arrête", "type": "Leçon", "status": "En cours", "owner": "Amy", "details": "Pub Meta en prospection froide (≈ 500 € pour 1 vente captée en septembre) : elle ne revient qu'en publicité partenaire sur des vidéos de créatrices qui ont déjà marché. Plus de prolongation de promo. Les patchs restent en ajout panier, sans communication dédiée. Plus de nouveaux outils : priorité vendre et faire publier.", "created": 10}}, {"c": "journal", "i": "j17", "d": {"date": "2026-11-24", "cat": "Offre / code promo", "by": "Amy", "created": 17, "title": "12 codes promo personnels créés sur Shopify (-10 %)", "details": "OURKCYA10, PIMSTHEAUSSIE10, PACOKINAI10, MARCEL10, FALCO10, ROXETRIO10, IFYOULIVEWITHUS10, SHIBAKITA10, SAMSKY10, UNBOODENOUS10, DAMON10, NOUBA10. Pour tous les clients, sans date de fin.", "lesson": "Le code mesure qui fait vendre : regarder les utilisations dans Shopify › Remises au bilan du 31/12."}}, {"c": "journal", "i": "j18", "d": {"date": "2026-11-24", "cat": "Partenariat", "by": "Amy", "created": 18, "title": "Nouveau contrat de collaboration influence", "details": "Généré depuis la fiche de chaque créatrice. Reel monté librement puis validé par les deux parties, publié en Collab avec @kabinecare, 2 à 3 stories avec sticker lien et code, publication sous 15 jours, Reel en ligne 3 mois, mention « Collaboration commerciale », utilisation des vidéos illimitée.", "lesson": "Remplace le contrat de Christelle (pas d'obligation de publier, adapté aux vidéos pour la pub)."}}, {"c": "tasks", "i": "t14", "d": {"text": "Pour chaque créatrice qui accepte : générer le contrat depuis sa fiche et l'envoyer", "done": false, "created": 14}}, {"c": "tasks", "i": "t15", "d": {"text": "Repartager chaque contenu publié en story + créer la story À la une « Ils l'ont testée »", "done": false, "created": 15}}, {"c": "tasks", "i": "t16", "d": {"text": "31/12 : bilan de la vague influence (publications, vues, ventes par code)", "done": false, "created": 16}}]};
+async function runSeed(){
+  if(DOCS.meta&&DOCS.meta.get(SEED_ID))return;
+  try{
+    for(const [id,code] of Object.entries(SEED.codes)){const d=DOCS.partners&&DOCS.partners.get(id);if(d&&!d.code)await DB.collection("partners").doc(id).set(Object.assign({},d,{code}))}
+    for(const x of SEED.ins){if(!(DOCS[x.c]&&DOCS[x.c].get(x.i)))await DB.collection(x.c).doc(x.i).set(x.d)}
+    await DB.collection("meta").doc(SEED_ID).set({at:Date.now(),by:uid});
+  }catch(e){}
+}
 /* ---------- connexion ---------- */
 function authMsg(t,bad){$("aMsg").textContent=t;$("aMsg").style.color=bad?"#7A3A1E":""}
 $("gBtn").onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin}});if(error)authMsg("La connexion Google n’est pas encore activée : utilise le lien par e-mail.",1)};
@@ -958,6 +980,7 @@ async function start(session){
   $("auth").classList.add("hide");$("sync").textContent="Chargement…";
   db=DB;assets=ASSETS;mcp=null;
   try{await loadAll()}catch(e){$("nodb").classList.remove("hide");$("sync").textContent="";return}
+  await runSeed();
   Object.keys(S).forEach(col=>{db.collection(col).onSnapshot(snap=>{S[col]=snap.docs.map(d=>Object.assign({_id:d.id},d.data()));R[col]()})});
   live();$("sync").textContent="";
   const saved=MEMBERS.find(x=>x.email===ls.get(ACT_KEY));if(saved&&isShared())ME=saved;uid=ME.email;
