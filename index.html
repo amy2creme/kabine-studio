@@ -126,6 +126,20 @@ textarea{min-height:110px;resize:vertical}
 .stc{background:var(--wht);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer}
 .stc .t{font-weight:600}.stc .m{font-size:12px;color:var(--taud);margin-top:5px}
 .bar{height:6px;background:var(--bei2);border-radius:9px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--blk)}
+#ctv{position:fixed;inset:0;z-index:60;background:#e9e3da;overflow:auto;display:none}
+#ctv.on{display:block}
+#ctv .ctbar{position:sticky;top:0;background:var(--blk);color:#fff;display:flex;gap:8px;align-items:center;padding:10px 14px;flex-wrap:wrap;z-index:2}
+#ctv .ctbar .btn{background:#fff!important;color:#1C1A18!important;border:1px solid #fff}#ctv .ctbar .btn.ghost{background:transparent!important;color:#fff!important}
+#ctv .ctbar .hint{font-size:12px;opacity:.8;flex-basis:100%}
+#ctdoc{background:#fff;max-width:760px;margin:18px auto 60px;padding:48px 52px;font-family:Inter,Arial,sans-serif;font-size:13.5px;line-height:1.55;color:#1C1A18;box-shadow:0 2px 14px rgba(0,0,0,.08);outline:none}
+#ctdoc h1{font-family:Cinzel,Georgia,serif;font-weight:600;font-size:26px;letter-spacing:2px;margin:0 0 4px;text-align:center}
+#ctdoc .sub{text-align:center;color:#8C7B6C;margin:0 0 26px;font-size:14px}
+#ctdoc h2{font-family:Inter,Arial,sans-serif;letter-spacing:0;text-transform:none;font-size:15px;margin:22px 0 6px;font-weight:700}
+#ctdoc ul{margin:6px 0 6px 18px;padding:0}#ctdoc p{margin:6px 0}
+#ctdoc .party{border:1px solid #e6ddd0;border-radius:8px;padding:10px 14px;margin:8px 0}
+#ctdoc .sig{display:flex;gap:30px;margin-top:20px}#ctdoc .sig>div{flex:1;border-top:1px solid #ccc;padding-top:8px;min-height:110px}
+@media(max-width:640px){#ctdoc{padding:26px 20px;margin:0}}
+@media print{body>*:not(#ctv){display:none!important}#ctv{position:static;background:#fff;overflow:visible}#ctv .ctbar{display:none}#ctdoc{box-shadow:none;margin:0;max-width:none;padding:0}@page{margin:18mm}#ctdoc h2{break-after:avoid}}
 </style>
 <link rel="icon" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 </head>
@@ -249,6 +263,7 @@ textarea{min-height:110px;resize:vertical}
   </section>
 </main>
 
+<div id="ctv"><div class="ctbar"><button class="btn" id="ctPrint">Enregistrer en PDF / Imprimer</button><button class="btn" id="ctMail">Envoyer par e-mail</button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte directement en cliquant dessus avant de l’enregistrer. Pour le PDF : Imprimer, puis « Enregistrer en PDF » (sur iPhone : Imprimer, puis le bouton Partager).</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
 <div class="ov" id="ov"><div class="md" id="md"></div></div>
 
 <script type="module">
@@ -625,11 +640,20 @@ function editPartner(p){
   <div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
   <div class="f2"><div class="fld"><label>Date de contact</label><input type="date" id="xd" value="${esc(p.date||"")}"></div>
   <div class="fld"><label>Animal / race</label><input type="text" id="xa" value="${esc(p.animal||"")}"></div></div>
+  <div class="mbox" style="margin-bottom:10px"><h4>Pour le contrat</h4>
+  <div class="f2"><div class="fld"><label>Nom et prénom</label><input type="text" id="xfn" value="${esc(p.fullName||"")}"></div>
+  <div class="fld"><label>Nom du chien</label><input type="text" id="xdn" value="${esc(p.dogName||"")}"></div></div>
+  <div class="fld"><label>E-mail</label><input type="text" id="xem" value="${esc(p.email||"")}" inputmode="email"></div>
+  <div class="fld" style="margin:0"><label>Adresse postale</label><textarea id="xad" style="min-height:54px">${esc(p.address||"")}</textarea></div>
+  <button class="btn" id="mkct" type="button" style="margin-top:10px">📝 Générer le contrat</button></div>
   <div class="fld"><label>Conditions convenues, notes</label><textarea id="xo">${esc(p.notes||"")}</textarea></div>
   <div class="fld"><label>Contrat (PDF ou image)</label><input type="file" id="xf" accept="application/pdf,image/*"><div id="xv" class="note">${contract?`<a href="${img(contract)}" data-asset="${esc(contract||"")}" target="_blank" rel="noopener">📄 ${esc(cname||"Ouvrir le contrat")}</a>`:"Aucun contrat"}</div></div>
   <div class="mfoot"><div>${p._id?`<button class="btn danger" id="dl">Supprimer</button>`:""}</div><div style="display:flex;gap:8px"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div></div>`,m=>{
     const q=s=>m.querySelector(s);q("#cx").onclick=closeModal;
     q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`}};
+    q("#mkct").onclick=async()=>{const info={id:p._id||null,name:q("#xn").value.trim(),handle:q("#xh").value.trim().replace(/^@/,""),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),animal:q("#xa").value.trim()};
+      if(p._id){try{const o=Object.assign({},p);delete o._id;await save("partners",p._id,Object.assign(o,{fullName:info.fullName,dogName:info.dogName,email:info.email,address:info.address,updated:Date.now(),by:me()||null,byId:uid||null}))}catch(e){}}
+      closeModal();contractForm(info)};
     if(q("#dl"))q("#dl").onclick=async()=>{if(q("#dl").dataset.c){await del("partners",p._id);closeModal()}else{q("#dl").dataset.c=1;q("#dl").textContent="Confirmer la suppression"}};
     q("#ok").onclick=async()=>{const n=q("#xn").value.trim();if(!n){q("#xn").focus();return}
       if(!q("#ok").dataset.c){const h=normH(q("#xh").value),nn=norm(n);
@@ -637,10 +661,62 @@ function editPartner(p){
         if(hit){q("#ok").dataset.c=1;q("#ok").textContent="Enregistrer quand même";
           q(".mfoot").insertAdjacentHTML("beforebegin",`<div class="dup">Déjà dans tes partenariats : <b>${esc(hit.name)}</b>${hit.handle?" (@"+esc(String(hit.handle).replace(/^@/,""))+")":""} — statut « ${esc(hit.status||"À contacter")} »${hit.date?", contact le "+esc(fmtD(hit.date)):""}. <a id="opdup">Ouvrir sa fiche</a></div>`);
           q("#opdup").onclick=()=>editPartner(hit);return}}
-      const d={name:n,handle:q("#xh").value.trim(),type:q("#xt").value,status:q("#xs").value,code:q("#xc").value.trim(),commission:q("#xm").value===""?null:Number(q("#xm").value),date:q("#xd").value,animal:q("#xa").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null};
+      const d={name:n,handle:q("#xh").value.trim(),type:q("#xt").value,status:q("#xs").value,code:q("#xc").value.trim(),commission:q("#xm").value===""?null:Number(q("#xm").value),date:q("#xd").value,animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null};
       await save("partners",p._id||null,d);closeModal();};
   });
 }
+
+/* ---------- contrats ---------- */
+const BRAND={name:"Kabine Care",rep:"Aminata Magali Kaba",siret:"909 345 134 00037",addr:"Lieu-dit Piladeuil, 33390 Saint-Androny",city:"Saint-Androny"};
+const frDate=d=>{try{return new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}catch(e){return d}};
+function contractForm(c){
+  const dog=c.dogName||"son chien";
+  openModal(`<h3>Contrat : ${esc(c.fullName||c.name||"")}</h3>
+  <div class="note" style="margin-top:0">Vérifie les conditions, puis clique sur « Voir le contrat ». Tu pourras encore modifier le texte avant le PDF.</div>
+  <div class="f2"><div class="fld"><label>Date du contrat</label><input type="date" id="cd" value="${today()}"></div><div class="fld"><label>Fait à</label><input type="text" id="cl" value="${esc(BRAND.city)}"></div></div>
+  <div class="fld"><label>Produits envoyés (un par ligne)</label><textarea id="cp" style="min-height:70px">1 Mousse nettoyante sans rinçage Kabine Care
+1 Lingette microfibre Kabine Care
+1 Baume protecteur Kabine Care</textarea></div>
+  <div class="fld"><label>Valeur des produits (prix public TTC)</label><input type="text" id="cv" value="41,90 €"></div>
+  <div class="fld"><label>Contenus attendus (un par ligne)</label><textarea id="ck" style="min-height:70px">1 Reel publié sur son compte Instagram
+2 à 3 stories Instagram</textarea></div>
+  <div class="f2"><div class="fld"><label>Délai de publication</label><input type="text" id="ct" value="30 jours"></div><div class="fld"><label>Reel en ligne au moins</label><input type="text" id="cm" value="3 mois"></div></div>
+  <div class="fld"><label>Utilisation des vidéos par Kabine Care</label><select id="cu"><option>pour une durée illimitée</option><option>pendant 2 ans</option><option>pendant 1 an</option></select></div>
+  <div class="mfoot"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="go">Voir le contrat</button></div>`,m=>{
+    const q=k=>m.querySelector(k);q("#cx").onclick=closeModal;
+    q("#go").onclick=()=>{const v={date:q("#cd").value||today(),lieu:q("#cl").value.trim(),prods:q("#cp").value.split("\n").map(x=>x.trim()).filter(Boolean),valeur:q("#cv").value.trim(),livr:q("#ck").value.split("\n").map(x=>x.trim()).filter(Boolean),delai:q("#ct").value.trim(),duree:q("#cm").value.trim(),usage:q("#cu").value};
+      closeModal();showContract(c,v)};
+  });
+}
+function contractHTML(c,v){
+  const E=esc,who=c.fullName||c.name||"",dog=c.dogName?("son chien "+c.dogName):"son chien",h=c.handle?("@"+c.handle):"son compte Instagram";
+  return `<h1>CONTRAT DE COLLABORATION</h1><p class="sub">Échange de produits contre création et publication de contenus</p>
+  <h2>Entre les soussignés</h2>
+  <div class="party"><b>${E(BRAND.name)}</b>, représentée par <b>${E(BRAND.rep)}</b><br>SIRET : ${E(BRAND.siret)}<br>Adresse : ${E(BRAND.addr)}<br>Ci-après dénommée « la Marque »,</div>
+  <p style="text-align:center">et</p>
+  <div class="party"><b>${E(who)}</b><br>${E(c.address||"Adresse : ……………………………………………").replace(/\n/g,"<br>")}<br>E-mail : ${E(c.email||"……………………………")}<br>Créatrice de contenus mettant en scène ${E(dog)}, via son compte Instagram <b>${E(h)}</b>.<br>Ci-après dénommée « la Créatrice ».</div>
+  <h2>Article 1 – Objet</h2><p>La Marque confie à la Créatrice la réalisation et la publication de contenus présentant la routine de soins <b>Kabine Care</b>. En contrepartie, la Marque offre à la Créatrice les produits listés à l’article 2. Cette collaboration ne donne lieu à aucune rémunération financière.</p>
+  <h2>Article 2 – Produits offerts</h2><p>La Marque s’engage à envoyer gratuitement à la Créatrice :</p><ul>${v.prods.map(x=>`<li>${E(x)}</li>`).join("")}</ul>
+  <p>Valeur des produits (prix public TTC) : <b>${E(v.valeur)}</b>. Ces produits deviennent la propriété de la Créatrice et n’ont pas à être retournés.</p>
+  <h2>Article 3 – Contenus attendus</h2><p>La Créatrice s’engage à réaliser et publier sur ${E(h)} :</p><ul>${v.livr.map(x=>`<li>${E(x)}</li>`).join("")}</ul>
+  <p>Ces contenus mettent naturellement en scène l’utilisation de la routine Kabine Care avec ${E(dog)}, dans un esprit authentique et bienveillant, conforme à l’univers de la marque. Chaque publication identifie le compte <b>@kabinecare</b>. Les idées de contenu peuvent être définies ensemble avant le tournage.</p>
+  <h2>Article 4 – Délais</h2><p>Les contenus sont publiés dans un délai maximal de <b>${E(v.delai)}</b> à compter de la réception des produits, sauf accord différent entre les parties. Le Reel reste en ligne sur le compte de la Créatrice pendant au moins <b>${E(v.duree)}</b>.</p>
+  <h2>Article 5 – Transparence</h2><p>Conformément à la loi n° 2023-451 du 9 juin 2023 encadrant l’influence commerciale, chaque contenu porte de façon claire la mention « Collaboration commerciale » (ou utilise l’outil de partenariat rémunéré d’Instagram). La Créatrice ne présente pas les produits comme ayant des effets médicaux ou thérapeutiques.</p>
+  <h2>Article 6 – Fichiers et utilisation des contenus</h2><p>La Créatrice transmet à la Marque les fichiers vidéo en bonne qualité, sans musique protégée. Elle autorise la Marque, ${E(v.usage)}, pour le monde entier et sans rémunération complémentaire, à utiliser ces contenus, ainsi que l’image de ${E(dog)} qui y figure, sur ses supports de communication : Instagram, Facebook, TikTok, Pinterest, site internet, newsletter, publicités en ligne (Meta Ads, TikTok Ads, Google Ads ou équivalent, y compris en publicité partenaire depuis le compte de la Créatrice si elle fournit le code correspondant), supports imprimés ou numériques.</p>
+  <h2>Article 7 – Adaptation des contenus</h2><p>La Marque peut adapter les contenus aux contraintes de diffusion (recadrage, sous-titres, ajout de texte ou de musique libre de droits, découpage, changement de format ou de durée), dans le respect de l’image de la Créatrice et de son chien.</p>
+  <h2>Article 8 – Bonne foi</h2><p>Les parties collaborent dans un esprit de confiance, de respect et de transparence. En cas de difficulté ou de retard, elles échangent pour trouver une solution amiable. Si les contenus ne sont pas publiés dans le délai prévu sans raison valable, la Marque peut mettre fin à la collaboration.</p>
+  <h2>Article 9 – Acceptation</h2><p>Le présent contrat prend effet à sa signature par les deux parties. Fait en deux exemplaires, à ${E(v.lieu)}, le ${E(frDate(v.date))}.</p>
+  <div class="sig"><div><b>Pour Kabine Care</b><br>${E(BRAND.rep)}<br>Signature :</div><div><b>Pour la Créatrice</b><br>${E(who)}<br>Signature, précédée de « Lu et approuvé » :</div></div>`;
+}
+let CT=null;
+function showContract(c,v){CT={c,v};$("ctdoc").innerHTML=contractHTML(c,v);$("ctv").classList.add("on");$("ctv").scrollTop=0;
+  if(c.id){const pr=S.partners.find(x=>x._id===c.id);if(pr&&(!pr.notes||!/Contrat généré/.test(pr.notes))){save("partners",c.id,Object.assign((()=>{const o=Object.assign({},pr);delete o._id;return o})(),{notes:((pr.notes||"")+"\nContrat généré le "+fmtD(today())+" par "+(me()||"")).trim()}))}}}
+$("ctClose").onclick=()=>$("ctv").classList.remove("on");
+$("ctPrint").onclick=()=>{const t=document.title;document.title="Contrat Kabine Care - "+((CT&&(CT.c.fullName||CT.c.name))||"");window.print();setTimeout(()=>document.title=t,1000)};
+$("ctMail").onclick=()=>{if(!CT)return;const c=CT.c,who=(c.fullName||c.name||"").split(" ")[0];
+  const sub="Contrat de collaboration Kabine Care"+(c.handle?" × @"+c.handle:"");
+  const body=`Bonjour${who?" "+who:""},\n\nMerci encore d’avoir accepté notre collaboration, nous sommes ravies 🐾\n\nVous trouverez ci-joint le contrat qui reprend ce que nous avons convenu : les produits offerts, les contenus attendus et les délais.\n\nPourriez-vous le relire, le signer en ajoutant « Lu et approuvé », et nous le renvoyer en réponse à cet e-mail ? Dès réception, nous vous envoyons la Routine.\n\nN’hésitez pas si vous avez la moindre question.\n\nBelle journée,\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`;
+  location.href="mailto:"+encodeURIComponent(c.email||"")+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body)};
 
 /* ---------- historique & anti-doublon ---------- */
 const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9@ ]+/g," ").replace(/\s+/g," ").trim();
