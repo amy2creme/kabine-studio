@@ -125,6 +125,23 @@ textarea{min-height:110px;resize:vertical}
 .btn.gg{background:#fff;color:var(--blk);border:1px solid var(--line)}
 .stc{background:var(--wht);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer}
 .stc .t{font-weight:600}.stc .m{font-size:12px;color:var(--taud);margin-top:5px}
+.pc .nx{font-size:12.5px;margin-top:8px;line-height:1.35}.pc .nx.late{color:#7A2E1E;font-weight:600}
+.col .pc{margin-bottom:8px;padding:12px}
+.stp{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}.stp:last-child{border-bottom:0}
+.stp input{width:18px;height:18px;accent-color:var(--blk);flex:0 0 auto}.stp .l{flex:1}.stp .w{font-size:11.5px;color:var(--taud);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.stp.done .l{color:var(--taud)}.stp.cur{background:var(--wht);border-radius:8px}.stp.cur .l{font-weight:600}
+.tag.warn{background:#F2D9D2;color:#7A2E1E}.tag.ok{background:#DDEBDD;color:#2F5A35}.tag.cre{background:#8C7B6C;color:#fff}
+.tdg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tdh{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--taud);font-weight:600;margin-bottom:4px}
+.tdi{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}.tdi:last-child{border-bottom:0}.tdi.late{color:#7A2E1E}
+.mhead{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px;text-transform:capitalize}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mdh{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--taud);text-align:center;padding:2px 0}
+.mday{background:var(--wht);border:1px solid var(--line);border-radius:8px;min-height:78px;padding:4px;overflow:hidden}.mday.off{background:transparent;border:0}.mday.tod{border-color:var(--blk)}
+.mday .mn{font-size:11px;color:var(--taud);margin-bottom:2px}
+.mp{font-size:11px;line-height:1.25;border-radius:5px;padding:2px 4px;margin-bottom:2px;cursor:pointer;background:var(--bei2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp.creatrice{background:var(--tau);color:#fff}.mp.st-publie{text-decoration:line-through;opacity:.6}
+@media(max-width:640px){.mday{min-height:58px}.mp{font-size:10px}}
 .bar{height:6px;background:var(--bei2);border-radius:9px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--blk)}
 #ctv{position:fixed;inset:0;z-index:60;background:#e9e3da;overflow:auto;display:none}
 #ctv.on{display:block}
@@ -178,6 +195,7 @@ textarea{min-height:110px;resize:vertical}
   <section id="v-tableau">
     <h2>Tableau de bord</h2>
     <p class="sub">Abonnés, publications, partenariats et tâches en un coup d’œil.</p>
+    <div class="card" id="todoCard" style="margin-bottom:14px"><div class="ct"><h3>À faire maintenant</h3><span class="muted">tâches, partenariats, publications</span></div><div id="todo"></div></div>
     <div class="grid kpis" id="kpis"></div>
     <div class="grid two" style="margin-top:14px">
       <div class="card">
@@ -190,7 +208,8 @@ textarea{min-height:110px;resize:vertical}
       </div>
       <div class="card">
         <div class="ct"><h3>À faire pour la marque</h3></div>
-        <form class="row" id="taskForm"><input type="text" id="taskIn" placeholder="Nouvelle tâche…"><button class="btn sm">Ajouter</button></form>
+        <form id="taskForm"><input type="text" id="taskIn" placeholder="Nouvelle tâche…" style="width:100%"><div class="row" style="margin-top:6px"><select id="taskOw" style="flex:1"><option value="">Pour qui ?</option></select><input type="date" id="taskDue" style="flex:1" title="Échéance"><button class="btn sm">Ajouter</button></div></form>
+        <div class="filters" id="tfilters" style="margin-top:8px"></div>
         <div id="tasks" style="margin-top:8px"></div>
       </div>
       <div class="card">
@@ -210,13 +229,17 @@ textarea{min-height:110px;resize:vertical}
 
   <!-- CALENDRIER -->
   <section id="v-calendrier" class="hide">
-    <div class="ct"><div><h2>Publications</h2><p class="sub" style="margin:0">De l’idée à la publication programmée, pour Instagram, TikTok et Facebook.</p></div><button class="btn" id="newPost">+ Nouvelle publication</button></div>
+    <div class="ct"><div><h2>Publications</h2><p class="sub" style="margin:0">Le calendrier éditorial : ce qu’on crée nous-mêmes et les vidéos attendues des créatrices.</p></div><button class="btn" id="newPost">+ Nouvelle publication</button></div>
     <div class="filters" style="margin-top:14px">
       <span class="chip on" data-net="all">Tous les réseaux</span><span class="chip" data-net="Instagram">Instagram</span><span class="chip" data-net="TikTok">TikTok</span><span class="chip" data-net="Facebook">Facebook</span>
       <span style="width:12px"></span>
-      <span class="chip on" data-view="board">Colonnes</span><span class="chip" data-view="agenda">Agenda</span>
+      <span class="chip on" data-view="board">Colonnes</span><span class="chip" data-view="month">Mois</span><span class="chip" data-view="agenda">Agenda</span>
+    </div>
+    <div class="filters" style="margin-top:8px">
+      <span class="chip on" data-src="all">Toutes</span><span class="chip" data-src="nous">Créées par nous</span><span class="chip" data-src="creatrice">Vidéos de créatrices</span>
     </div>
     <div id="board" class="board"></div>
+    <div id="month" class="hide"></div>
     <div id="agenda" class="hide"></div>
   </section>
 
@@ -271,18 +294,17 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 (function(){
-const STATUSES=[["idee","Idées"],["afaire","À faire"],["pret","Prêt à publier"],["programme","Programmé"],["publie","Publié"]];
+const STATUSES=[["idee","Idées"],["afaire","À créer (nous)"],["attente","En attente créatrice"],["avalider","À valider"],["pret","Prêt à publier"],["programme","Programmé"],["publie","Publié"]];
 const NETS=["Instagram","TikTok","Facebook","Les deux","Les trois"];
 const MBRAND="8276119", MSERVER="Metricool Social Media Management", TZ="Europe/Paris";
 const netList=n=>n==="Les deux"?["instagram","tiktok"]:n==="Les trois"?["instagram","tiktok","facebook"]:n?[n.toLowerCase()]:[];
 const FORMATS=["Reel / Vidéo","Carrousel","Post photo","Story","Live"];
-const PST=["À contacter","Message envoyé","Accepté","Colis envoyé","Contenu publié","Relance","Refus / sans réponse","Terminé"];
 const PTYPES=["Influenceuse","Créatrice UGC","Partenaire","Fournisseur","Autre"];
 const S={posts:[],feed:[],stats:[],partners:[],tasks:[],journal:[],strategy:[]};
 const JCATS=["Live","Offre / code promo","Contenu","Partenariat","Boutique / produits","Réseaux & comptes","Outils","Autre"];
 let hcat="all";
 let db=null, assets=null, mcp=null;
-let net="all", cview="board", pfilter="all", selTile=null;
+let net="all", cview="board", pfilter="all", selTile=null, psrc="all", mcur=new Date().toISOString().slice(0,7);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtE=n=>new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n);
@@ -334,13 +356,13 @@ function renderKpis(){
   const lastStat=[...S.stats].sort((a,b)=>a.date<b.date?1:-1)[0]||{};
   const week=new Date();week.setDate(week.getDate()+7);const wk=week.toISOString().slice(0,10);
   const upcoming=S.posts.filter(p=>p.status!=="publie"&&p.date&&p.date>=today()&&p.date<=wk).length;
-  const active=S.partners.filter(p=>["Message envoyé","Accepté","Colis envoyé","Relance"].includes(p.status)).length;
+  const active=S.partners.filter(p=>!["À contacter","Terminé","En pause","Refus / sans réponse"].includes(phaseOf(p))).length;
   let s30="—",o30="—";
   if(shop&&shop.rows){const last4=shop.rows.slice(-4);s30=fmtE(last4.reduce((a,r)=>a+Number(r[1]||0),0));o30=fmtN(last4.reduce((a,r)=>a+Number(r[2]||0),0));}
   const k=[["Ventes site (4 sem.)",s30,"Shopify : prochaine version"],["Commandes (4 sem.)",o30,"Shopify"],
     folK("Abonnés TikTok","tiktok",lastStat),folK("Abonnés Instagram","instagram",lastStat),folK("Abonnés Facebook","facebook",lastStat),
     ["Programmées",fmtN(S.posts.filter(p=>p.status==="programme").length),"Publications programmées"],
-    ["Publications 7 jours",fmtN(upcoming),"Prévues, pas encore publiées"],["Partenariats en cours",fmtN(active),"Contactées → colis envoyé"]];
+    ["Publications 7 jours",fmtN(upcoming),"Prévues, pas encore publiées"],["Partenariats en cours",fmtN(active),"Du message envoyé au bilan"]];
   $("kpis").innerHTML=k.map(x=>`<div class="card kpi"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="h">${x[2]}</div></div>`).join("");
 }
 function barChart(rows){
@@ -414,19 +436,49 @@ $("addStat").onclick=()=>{
       await save("stats","s"+date,{date,tiktok:n(m.querySelector("#st").value),instagram:n(m.querySelector("#si").value),facebook:n(m.querySelector("#sf").value),perso:n(m.querySelector("#sp").value)});closeModal();};
   });
 };
+function renderTodo(){
+  if(!$("todo"))return;const wk=addDays(today(),7);const L=[];
+  S.tasks.filter(t=>!t.done&&t.due&&t.due<=wk).sort((a,b)=>a.due<b.due?-1:1).forEach(t=>L.push({g:"Tâches",late:t.due<today(),html:`${esc(t.text)} <span class="muted">· ${t.due<today()?"en retard, ":""}${esc(fmtD(t.due))}</span>`,who:t.owner,k:"t",id:t._id}));
+  S.partners.forEach(p=>{const n=pNext(p);if(!n)return;const ph=phaseOf(p);if(ph==="À contacter")return;const h=p.handle?"@"+String(p.handle).replace(/^@/,""):p.name;
+    if(n.late)L.push({g:"Partenariats",late:true,html:`⏰ <b>${esc(h)}</b> : relancer (${esc(n.todo.replace(/^Attendre /,"").replace(/^Vérifier que /,"").replace(/^Vérifier /,""))}, ${n.late} j)`,k:"r",id:p._id});
+    else if(!n.wait)L.push({g:"Partenariats",html:`<b>${esc(h)}</b> : ${esc(n.todo)}`,k:"r",id:p._id})});
+  S.posts.forEach(x=>{const st=x.status||"idee";if(st==="avalider")L.push({g:"Publications",html:`À valider : ${esc(x.title||"Sans titre")}`,who:x.owner,k:"p",id:x._id});
+    else if(st==="afaire"&&x.date&&x.date<=wk)L.push({g:"Publications",late:x.date<today(),html:`À créer : ${esc(x.title||"Sans titre")} <span class="muted">· ${esc(fmtD(x.date))}</span>`,who:x.owner,k:"p",id:x._id});
+    else if(st==="attente"&&x.date&&x.date<today())L.push({g:"Publications",late:true,html:`Vidéo en retard : ${esc(x.title||"Sans titre")}`,k:"p",id:x._id});
+    else if(st==="pret")L.push({g:"Publications",html:`À programmer : ${esc(x.title||"Sans titre")}`,who:x.owner,k:"p",id:x._id})});
+  if(!L.length){$("todo").innerHTML=`<div class="muted">Rien d’urgent. 👌</div>`;return}
+  const gs=["Partenariats","Publications","Tâches"];
+  $("todo").innerHTML=`<div class="tdg">`+gs.filter(g=>L.some(x=>x.g===g)).map(g=>`<div><div class="tdh">${g}</div>${L.filter(x=>x.g===g).sort((a,b)=>(b.late?1:0)-(a.late?1:0)).map(x=>`<div class="tdi ${x.late?"late":""}" data-k="${x.k}" data-id="${esc(x.id)}"><span style="flex:1">${x.html}</span>${x.who?avatar(x.who,null):""}</div>`).join("")}</div>`).join("")+`</div>`;
+}
+$("todo").addEventListener("click",e=>{const c=e.target.closest(".tdi");if(!c)return;const id=c.dataset.id;
+  if(c.dataset.k==="t"){const t=S.tasks.find(x=>x._id===id);if(t)editTask(t)}else if(c.dataset.k==="r")editPartner(S.partners.find(x=>x._id===id));else editPost(S.posts.find(x=>x._id===id))});
+let tfil="all";
+function taskDoc(t,ch){const o=Object.assign({},t);delete o._id;return Object.assign(o,ch)}
 function renderTasks(){
   const nd=S.tasks.filter(x=>x.done).length;
-  const t=[...S.tasks].filter(x=>!x.done).sort((a,b)=>(a.created||0)-(b.created||0));
-  $("tasks").innerHTML=t.length?t.map(x=>`<div class="task ${x.done?"done":""}"><input type="checkbox" data-id="${x._id}" ${x.done?"checked":""}><span style="flex:1">${esc(x.text)}</span>${x.createdBy||x.createdById?`<span title="Ajoutée par ${esc(x.createdBy||"")}">${avatar(x.createdBy,x.createdById)}</span>`:""}<button class="x" data-del="${x._id}" aria-label="Supprimer">✕</button></div>`).join(""):`<div class="muted">Rien à faire pour l’instant.</div>`;
+  const sel=$("taskOw");if(sel&&sel.options.length!==TEAM.length+1)sel.innerHTML=`<option value="">Pour qui ?</option>`+TEAM.map(t=>`<option>${esc(t)}</option>`).join("");
+  const open=S.tasks.filter(x=>!x.done);
+  $("tfilters").innerHTML=[["all",`Toutes (${open.length})`]].concat(TEAM.map(t=>[t,`${t} (${open.filter(x=>x.owner===t).length})`])).map(([k,l])=>`<span class="chip ${tfil===k?"on":""}" data-tf="${esc(k)}">${esc(l)}</span>`).join("");
+  const t=open.filter(x=>tfil==="all"||x.owner===tfil).sort((a,b)=>(a.due||"9999")<(b.due||"9999")?-1:(a.due||"9999")>(b.due||"9999")?1:(a.created||0)-(b.created||0));
+  $("tasks").innerHTML=t.length?t.map(x=>`<div class="task"><input type="checkbox" data-id="${x._id}"><span style="flex:1;cursor:pointer" data-ed="${x._id}">${esc(x.text)}${x.due?` <span class="tag ${x.due<today()?"warn":x.due===today()?"ok":""}">${x.due<today()?"En retard · ":""}${esc(fmtD(x.due))}</span>`:""}</span>${x.owner?`<div title="Pour ${esc(x.owner)}">${avatar(x.owner,null)}</div>`:""}<button class="x" data-del="${x._id}" aria-label="Supprimer">✕</button></div>`).join(""):`<div class="muted">Rien à faire pour l’instant.</div>`;
   $("tasks").innerHTML+=nd?`<div class="note"><a href="#historique">${nd} tâche(s) terminée(s) → Historique</a></div>`:"";
-  if(typeof renderHistory==="function")renderHistory();
+  if(typeof renderHistory==="function")renderHistory();if(typeof renderTodo==="function")renderTodo();
 }
-$("tasks").addEventListener("change",e=>{const id=e.target.dataset.id;const t=S.tasks.find(x=>x._id===id);if(t)save("tasks",id,Object.assign({text:t.text,done:e.target.checked,created:t.created||Date.now(),createdBy:t.createdBy||null,createdById:t.createdById||null,doneAt:e.target.checked?today():null},e.target.checked?{by:me()||null,byId:uid||null}:{by:null,byId:null}))});
+$("tfilters").addEventListener("click",e=>{const c=e.target.closest("[data-tf]");if(c){tfil=c.dataset.tf;renderTasks()}});
+function editTask(t){
+  openModal(`<h3>Tâche</h3><div class="fld"><label>À faire</label><input type="text" id="et" value="${esc(t.text||"")}"></div>
+  <div class="f2"><div class="fld"><label>Pour qui ?</label><select id="eo"><option value="">—</option>${opts(TEAM,t.owner)}</select></div><div class="fld"><label>Échéance</label><input type="date" id="ed" value="${esc(t.due||"")}"></div></div>
+  <div class="mfoot"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div>`,m=>{
+    m.querySelector("#cx").onclick=closeModal;
+    m.querySelector("#ok").onclick=async()=>{const v=m.querySelector("#et").value.trim();if(!v)return;await save("tasks",t._id,taskDoc(t,{text:v,owner:m.querySelector("#eo").value,due:m.querySelector("#ed").value}));closeModal()}});
+}
+$("tasks").addEventListener("change",e=>{const id=e.target.dataset.id;const t=S.tasks.find(x=>x._id===id);if(t)save("tasks",id,taskDoc(t,Object.assign({done:e.target.checked,doneAt:e.target.checked?today():null},e.target.checked?{by:me()||null,byId:uid||null}:{by:null,byId:null})))});
+$("tasks").addEventListener("click",e=>{const ed=e.target.closest("[data-ed]");if(ed){const t=S.tasks.find(x=>x._id===ed.dataset.ed);if(t)editTask(t)}});
 $("tasks").addEventListener("click",e=>{const id=e.target.dataset.del;if(id)del("tasks",id)});
 $("taskForm").onsubmit=e=>{e.preventDefault();const v=$("taskIn").value.trim();if(!v)return;
   const f=$("taskForm");if(f.dataset.ok!==v){const hits=findSimilar(v);if(hits.length){f.dataset.ok=v;let w=$("taskDup");if(!w){w=document.createElement("div");w.id="taskDup";f.after(w)}w.className="dup";w.innerHTML="Attention, ça ressemble à : "+hits.slice(0,3).map(h=>`<br>• ${esc(h.label)}`).join("")+"<br>Clique encore sur Ajouter pour l’ajouter quand même.";return}}
   delete f.dataset.ok;const w=$("taskDup");if(w)w.remove();
-  save("tasks",null,{text:v,done:false,created:Date.now(),createdBy:me()||null,createdById:uid||null});$("taskIn").value=""};
+  save("tasks",null,{text:v,done:false,owner:$("taskOw").value,due:$("taskDue").value,created:Date.now(),createdBy:me()||null,createdById:uid||null});$("taskIn").value="";$("taskDue").value=""};
 
 /* ---------- metricool ---------- */
 let soc=null, socErr=null, socAt=null, sched=null, schedErr=null, schedAt=null;
@@ -541,9 +593,11 @@ async function schedulePost(p,d,btn,msg){
 /* ---------- posts ---------- */
 const TAGS={instagram:`<span class="tag ig">Instagram</span>`,tiktok:`<span class="tag tt">TikTok</span>`,facebook:`<span class="tag fb">Facebook</span>`};
 const netTag=n=>netList(n).map(x=>TAGS[x]||"").join("");
-function postCard(p){return `<div class="post" data-id="${p._id}">${p.asset?`<img src="${img(p.asset)}" data-asset="${esc(p.asset||"")}" alt="">`:""}<div><div class="t">${esc(p.title||"Sans titre")}</div><div class="m">${netTag(p.network)} ${esc(p.format||"")}</div><div class="m">${fmtD(p.date)}${p.time?" · "+esc(p.time):""}${p.status==="programme"?` <span class="tag ok">Programmé</span>`:""}${overdue(p)?` <span class="tag warn">À vérifier</span>`:""}</div>${p.by||p.byId?`<div class="m">${whoTag(p," ")}</div>`:""}</div></div>`}
+function postCard(p){const pr=p.partnerId&&S.partners.find(x=>x._id===p.partnerId);const src=srcOf(p);return `<div class="post" data-id="${p._id}">${p.asset?`<img src="${img(p.asset)}" data-asset="${esc(p.asset||"")}" alt="">`:""}<div><div class="t">${esc(p.title||"Sans titre")}</div><div class="m">${src==="creatrice"?`<span class="tag cre">🎥 ${esc(pr&&pr.handle?"@"+String(pr.handle).replace(/^@/,""):"Créatrice")}</span>`:`<span class="tag">Kabine</span>`} ${netTag(p.network)} ${esc(p.format||"")}</div><div class="m">${fmtD(p.date)}${p.time?" · "+esc(p.time):""}${p.status==="programme"?` <span class="tag ok">Programmé</span>`:""}${overdue(p)?` <span class="tag warn">À vérifier</span>`:""}${postLate(p)?` <span class="tag warn">En retard</span>`:""}</div>${p.owner?`<div class="m">${avatar(p.owner,null)} ${esc(p.owner)}</div>`:p.by||p.byId?`<div class="m">${whoTag(p," ")}</div>`:""}</div></div>`}
 function overdue(p){return p.status==="programme"&&p.date&&new Date(`${p.date}T${p.time||"23:59"}:00`)<new Date(Date.now()-30*60000)}
-function filtered(){return S.posts.filter(p=>net==="all"||netList(p.network).includes(net.toLowerCase()))}
+const srcOf=p=>p.source||(p.partnerId?"creatrice":"nous");
+function filtered(){return S.posts.filter(p=>(net==="all"||netList(p.network).includes(net.toLowerCase()))&&(psrc==="all"||srcOf(p)===psrc))}
+function postLate(p){return ["idee","afaire","attente","avalider","pret"].includes(p.status||"idee")&&p.date&&p.date<today()}
 function renderPosts(){
   const ps=filtered();const byDate=(a,b)=>(a.date||"9999")<(b.date||"9999")?-1:1;
   $("board").innerHTML=STATUSES.map(([k,l])=>{const items=ps.filter(p=>(p.status||"idee")===k).sort(byDate);
@@ -552,10 +606,30 @@ function renderPosts(){
   $("agenda").innerHTML=Object.keys(groups).length?Object.keys(groups).map(d=>`<div class="day"><h5>${new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</h5>${groups[d].map(postCard).join("")}</div>`).join(""):`<div class="muted">Aucune publication datée.</div>`;
   const nx=S.posts.filter(p=>p.status!=="publie"&&p.date&&p.date>=today()).sort(byDate).slice(0,5);
   $("nextPosts").innerHTML=nx.length?nx.map(postCard).join(""):`<div class="muted">Aucune publication prévue. Ajoute-en une dans l’onglet Publications.</div>`;
-  renderKpis();if(typeof renderSched==="function")renderSched();
+  renderMonth();
+  renderKpis();if(typeof renderSched==="function")renderSched();if(typeof renderTodo==="function")renderTodo();
 }
+async function postToPartner(d){
+  const pr=d.partnerId&&S.partners.find(x=>x._id===d.partnerId);if(!pr)return;
+  const need={avalider:["video"],pret:["video","valide"],programme:["video","valide"],publie:["video","valide","reel"]}[d.status]||[];
+  const st=JSON.parse(JSON.stringify(stepsOf(pr)));let ch=false;need.forEach(k=>{if(!st[k]){st[k]={at:k==="reel"&&d.date&&d.date<=today()?d.date:today(),by:me()||null,byId:uid||null};ch=true}});
+  if(!ch)return;const o=Object.assign({},pr);delete o._id;o.steps=st;o.codeLive=!!st.code;o.status=phaseOf(o);o.updated=Date.now();await save("partners",pr._id,o);
+}
+function renderMonth(){
+  const [y,mo]=mcur.split("-").map(Number);const first=new Date(y,mo-1,1);const start=(first.getDay()+6)%7;const nd=new Date(y,mo,0).getDate();
+  const ps=filtered();let h=`<div class="mhead"><button class="btn ghost sm" data-mm="-1">◀</button><b>${first.toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</b><button class="btn ghost sm" data-mm="1">▶</button></div><div class="mgrid">`+["lun","mar","mer","jeu","ven","sam","dim"].map(d=>`<div class="mdh">${d}</div>`).join("");
+  for(let i=0;i<start;i++)h+=`<div class="mday off"></div>`;
+  for(let d=1;d<=nd;d++){const ds=`${mcur}-${String(d).padStart(2,"0")}`;const it=ps.filter(p=>p.date===ds);
+    h+=`<div class="mday ${ds===today()?"tod":""}"><div class="mn">${d}</div>${it.map(p=>`<div class="mp ${srcOf(p)} st-${p.status||"idee"}" data-id="${p._id}" title="${esc(p.title||"")}">${esc(p.title||"Sans titre")}</div>`).join("")}</div>`}
+  h+=`</div><div class="note">Beige : créé par nous · Taupe : vidéo de créatrice · Barré : publié.</div>`;
+  const nod=ps.filter(p=>!p.date&&p.status!=="publie");if(nod.length)h+=`<div class="note" style="margin-top:10px"><b>Sans date (${nod.length})</b></div>`+nod.map(postCard).join("");
+  $("month").innerHTML=h;
+}
+$("month").addEventListener("click",e=>{const b=e.target.closest("[data-mm]");if(b){const [y,m]=mcur.split("-").map(Number);const d=new Date(y,m-1+Number(b.dataset.mm),1);mcur=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");renderMonth();return}
+  const c=e.target.closest("[data-id]");if(c)editPost(S.posts.find(p=>p._id===c.dataset.id))});
+document.querySelectorAll("[data-src]").forEach(c=>c.onclick=()=>{psrc=c.dataset.src;document.querySelectorAll("[data-src]").forEach(x=>x.classList.toggle("on",x===c));renderPosts()});
 document.querySelectorAll("[data-net]").forEach(c=>c.onclick=()=>{net=c.dataset.net;document.querySelectorAll("[data-net]").forEach(x=>x.classList.toggle("on",x===c));renderPosts()});
-document.querySelectorAll("[data-view]").forEach(c=>c.onclick=()=>{cview=c.dataset.view;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("on",x===c));$("board").classList.toggle("hide",cview!=="board");$("agenda").classList.toggle("hide",cview!=="agenda")});
+document.querySelectorAll("[data-view]").forEach(c=>c.onclick=()=>{cview=c.dataset.view;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("on",x===c));$("board").classList.toggle("hide",cview!=="board");$("agenda").classList.toggle("hide",cview!=="agenda");$("month").classList.toggle("hide",cview!=="month")});
 ["board","agenda","nextPosts"].forEach(id=>$(id).addEventListener("click",e=>{const c=e.target.closest(".post");if(c)editPost(S.posts.find(p=>p._id===c.dataset.id))}));
 $("newPost").onclick=()=>editPost(null);
 const opts=(arr,v)=>arr.map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("");
@@ -567,6 +641,9 @@ function editPost(p){
   <div class="fld"><label>Format</label><select id="pf">${opts(FORMATS,p.format)}</select></div></div>
   <div class="f2"><div class="fld"><label>Date</label><input type="date" id="pd" value="${esc(p.date||"")}"></div>
   <div class="fld"><label>Heure de publication</label><input type="time" id="ph" value="${esc(p.time||"")}"></div></div>
+  <div class="f2"><div class="fld"><label>Qui crée le contenu ?</label><select id="psrc"><option value="nous" ${srcOf(p)==="nous"?"selected":""}>Nous (Kabine)</option><option value="creatrice" ${srcOf(p)==="creatrice"?"selected":""}>Une créatrice</option></select></div>
+  <div class="fld"><label>Responsable</label><select id="pow"><option value="">—</option>${opts(TEAM,p.owner)}</select></div></div>
+  <div class="fld" id="pprw"><label>Créatrice</label><select id="ppr"><option value="">—</option>${S.partners.filter(x=>x._id===p.partnerId||outcomeOf(x)==="En cours").map(x=>`<option value="${x._id}" ${x._id===p.partnerId?"selected":""}>${esc(x.name)}${x.handle?" (@"+esc(String(x.handle).replace(/^@/,""))+")":""}</option>`).join("")}</select></div>
   <div class="fld"><label>Statut</label><select id="ps">${STATUSES.map(([k,l])=>`<option value="${k}" ${k===(p.status||"idee")?"selected":""}>${l}</option>`).join("")}</select></div>
   <div class="fld"><label>Légende</label><textarea id="pc" placeholder="Texte de la publication, hashtags…">${esc(p.caption||"")}</textarea><button class="btn ghost sm" id="cp" type="button" style="margin-top:6px">Copier la légende</button></div>
   <div class="fld"><label>Visuel</label><input type="file" id="pa" accept="image/*,video/*"><div id="pv">${asset?`<img class="prev" src="${img(asset)}" data-asset="${esc(asset||"")}" alt="">`:""}</div></div>
@@ -580,16 +657,17 @@ function editPost(p){
   <div class="mfoot"><div>${p._id?`<button class="btn danger" id="dl">Supprimer</button>`:""}</div><div style="display:flex;gap:8px"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div></div>`,m=>{
     const q=s=>m.querySelector(s);
     q("#cx").onclick=closeModal;
+    const swp=()=>q("#pprw").classList.toggle("hide",q("#psrc").value!=="creatrice");swp();q("#psrc").onchange=swp;
     q("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(q("#pc").value);q("#cp").textContent="Copiée ✓"}catch(e){q("#pc").select();q("#cp").textContent="Sélectionnée : copie-la"}};
     q("#pa").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){asset=id;q("#pv").innerHTML=f.type.startsWith("video")?`<div class="muted">Vidéo ajoutée ✓</div>`:`<img class="prev" src="${img(id)}" data-asset="${esc(id||"")}" alt="">`}};
     if(q("#dl"))q("#dl").onclick=async()=>{if(q("#dl").dataset.c){await del("posts",p._id);closeModal()}else{q("#dl").dataset.c=1;q("#dl").textContent="Confirmer la suppression"}};
-    const read=()=>({title:q("#pt").value.trim(),network:q("#pn").value,format:q("#pf").value,date:q("#pd").value,time:q("#ph").value,status:q("#ps").value,caption:q("#pc").value,notes:q("#po").value,mediaUrl:((q("#pm")||{}).value||p.mediaUrl||"").trim(),asset:asset||null,metricool:p.metricool||null,updated:Date.now(),by:me()||null,byId:uid||null,
+    const read=()=>({title:q("#pt").value.trim(),network:q("#pn").value,format:q("#pf").value,date:q("#pd").value,time:q("#ph").value,status:q("#ps").value,caption:q("#pc").value,notes:q("#po").value,mediaUrl:((q("#pm")||{}).value||p.mediaUrl||"").trim(),asset:asset||null,metricool:p.metricool||null,source:q("#psrc").value,partnerId:q("#psrc").value==="creatrice"?(q("#ppr").value||null):null,owner:q("#pow").value||"",created:p.created||Date.now(),updated:Date.now(),by:me()||null,byId:uid||null,
       publishedBy:q("#ps").value==="publie"?(p.status==="publie"?(p.publishedBy||null):me()||null):null,publishedById:q("#ps").value==="publie"?(p.status==="publie"?(p.publishedById||null):uid||null):null});
     q("#ok").onclick=async()=>{const d=read();
       if(!q("#ok").dataset.c){const hits=S.posts.filter(x=>x._id!==p._id&&d.title&&similar(d.title,x.title||""));
         if(hits.length){q("#ok").dataset.c=1;q("#ok").textContent="Enregistrer quand même";
           q(".mfoot").insertAdjacentHTML("beforebegin",`<div class="dup">Une publication ressemble à celle-ci : ${hits.slice(0,3).map(h=>`<br>• « ${esc(h.title)} » — ${esc((STATUSES.find(s=>s[0]===h.status)||[0,""])[1])}${h.date?", "+esc(fmtD(h.date)):""}`).join("")}</div>`);return}}
-      await save("posts",p._id||null,d);closeModal();};
+      await save("posts",p._id||null,d);closeModal();postToPartner(d);};
     if(q("#sched"))q("#sched").onclick=()=>schedulePost(p,read(),q("#sched"),q("#smsg"));
     if(!mcp&&q(".mbox"))q(".mbox").innerHTML=`<h4>Programmation</h4><div class="note" style="margin:0">La programmation automatique arrivera dans une prochaine version. Pour l’instant, programme dans Metricool, puis passe la publication en « Programmé ».</div>`;
   });
@@ -616,61 +694,137 @@ $("toggleLive").onclick=()=>{const t=S.feed.find(x=>x._id===selTile);if(t)save("
 $("delTile").onclick=async()=>{const b=$("delTile");if(!b.dataset.c){b.dataset.c=1;b.textContent="Confirmer";setTimeout(()=>{b.dataset.c="";b.textContent="Retirer"},4000);return}
   b.dataset.c="";b.textContent="Retirer";await del("feed",selTile);selTile=null;renderFeed()};
 
-/* ---------- partners ---------- */
-function renderPartners(){
-  const counts={};S.partners.forEach(p=>counts[p.status]=(counts[p.status]||0)+1);
-  $("pfilters").innerHTML=[`<span class="chip ${pfilter==="all"?"on":""}" data-pf="all">Tous (${S.partners.length})</span>`].concat(PST.filter(s=>counts[s]).map(s=>`<span class="chip ${pfilter===s?"on":""}" data-pf="${esc(s)}">${esc(s)} (${counts[s]})</span>`)).join("");
-  const list=S.partners.filter(p=>pfilter==="all"||p.status===pfilter).sort((a,b)=>PST.indexOf(a.status)-PST.indexOf(b.status)||String(a.name).localeCompare(String(b.name)));
-  $("plist").innerHTML=list.length?list.map(p=>`<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${esc(p.type||"")}${p.handle?" · @"+esc(String(p.handle).replace(/^@/,"")):""}${p.animal?" · "+esc(p.animal):""}</div>
-    <span class="st s${Math.max(0,PST.indexOf(p.status))}">${esc(p.status||"À contacter")}</span>${p.code?` <span class="tag">Code ${esc(p.code)}${p.codeLive?" ✓":" · à créer"}</span>`:""}${p.contract?` <span class="tag">📄 Contrat</span>`:""}
-    ${p.date?`<div class="m muted" style="margin-top:6px">Contact : ${fmtD(p.date)}</div>`:""}${p.by||p.byId?`<div style="margin-top:6px">${whoTag(p,"Suivi par ")}</div>`:""}</div>`).join(""):`<div class="muted">Aucun partenariat ici.</div>`;
-  renderKpis();
+/* ---------- partners (suivi type CRM) ---------- */
+const PSTEPS=[
+ ["contact","Message envoyé sur les réseaux","Envoyer le premier message"],
+ ["reponse","Elle a accepté","Attendre sa réponse"],
+ ["infos","Infos reçues (nom, adresse, e-mail)","Lui demander nom, adresse et e-mail"],
+ ["contrat","Contrat envoyé","Générer et envoyer le contrat"],
+ ["signe","Contrat signé reçu","Attendre le contrat signé"],
+ ["code","Code promo créé sur Shopify","Créer son code promo sur Shopify"],
+ ["colis","Colis envoyé","Envoyer la Routine"],
+ ["video","Vidéo reçue","Attendre sa vidéo"],
+ ["valide","Vidéo validée par les deux","Valider la vidéo (sous 48 h)"],
+ ["reel","Reel publié en Collab","Vérifier que le Reel est publié en Collab"],
+ ["stories","Stories publiées avec le code","Vérifier ses stories avec le code"],
+ ["repartage","Repartagé sur @kabinecare","Repartager en story sur @kabinecare"],
+ ["bilan","Bilan fait (ventes du code)","Faire le bilan : ventes avec son code"]];
+const PWAIT={reponse:["contact",7],signe:["contrat",5],video:["colis",15],reel:["valide",5],stories:["valide",5]};
+const PPHASES=[["À contacter",0,0],["Message envoyé",1,1],["Contrat",2,4],["Code & colis",5,6],["Contenu",7,10],["Repartage & bilan",11,12],["Terminé",13,13]];
+const POUT=["En cours","En pause","Refus","Sans réponse"];
+const PHCLS={"À contacter":"s0","Message envoyé":"s1","Contrat":"s3","Code & colis":"s5","Contenu":"s2","Repartage & bilan":"s4","Terminé":"s7","En pause":"s0","Refus / sans réponse":"s6"};
+const OLDST={"Message envoyé":1,"Relance":1,"Accepté":2,"Colis envoyé":7,"Contenu publié":10,"Terminé":13};
+const PST=PPHASES.map(x=>x[0]).concat(["En pause","Refus / sans réponse"]);
+let pview=window.innerWidth<700?"list":"board";
+function stepsOf(p){
+  if(p&&p.steps)return p.steps;const o={};if(!p)return o;
+  const n=OLDST[p.status]||0;const base={at:p.date||"",by:p.by||null,byId:p.byId||null};
+  const keys=p.status==="Colis envoyé"?["contact","reponse","colis"]:p.status==="Contenu publié"?["contact","reponse","colis","video","valide","reel"]:PSTEPS.slice(0,n).map(s=>s[0]);
+  keys.forEach(k=>o[k]=Object.assign({},base));if(p.code&&p.codeLive)o.code=o.code||Object.assign({},base);return o;
 }
-$("pfilters").addEventListener("click",e=>{const c=e.target.closest("[data-pf]");if(c){pfilter=c.dataset.pf;renderPartners()}});
+function outcomeOf(p){if(p.outcome)return p.outcome;if(p.status==="Refus / sans réponse")return "Sans réponse";return "En cours"}
+function nextIdx(st){const i=PSTEPS.findIndex(s=>!st[s[0]]);return i<0?PSTEPS.length:i}
+function phaseOf(p){const out=outcomeOf(p);if(out==="En pause")return "En pause";if(out!=="En cours")return "Refus / sans réponse";
+  const n=nextIdx(stepsOf(p));return (PPHASES.find(x=>n>=x[1]&&n<=x[2])||PPHASES[0])[0]}
+const daysSince=d=>d?Math.floor((Date.now()-new Date(d+"T12:00:00").getTime())/864e5):0;
+function pNext(p){
+  const st=stepsOf(p),out=outcomeOf(p);if(out!=="En cours")return null;
+  const n=nextIdx(st);if(n>=PSTEPS.length)return null;const [k,,todo]=PSTEPS[n];
+  const w=PWAIT[k];let late=0;if(w&&st[w[0]]&&st[w[0]].at){const d=daysSince(st[w[0]].at);if(d>=w[1])late=d}
+  return {k,todo,wait:!!w,late};
+}
+function lastStep(p){const st=stepsOf(p);let best=null;PSTEPS.forEach(([k,l])=>{const s=st[k];if(s&&(!best||(s.at||"")>=(best.at||"")))best=Object.assign({label:l},s)});return best}
+function pCard(p){
+  const st=stepsOf(p),n=PSTEPS.filter(s=>st[s[0]]).length,ph=phaseOf(p),nx=pNext(p),ls=lastStep(p);
+  return `<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${p.handle?"@"+esc(String(p.handle).replace(/^@/,"")):esc(p.type||"")}${p.animal?" · "+esc(p.animal):""}</div>
+  ${pview==="list"?`<span class="st ${PHCLS[ph]||"s0"}">${esc(ph)}</span>`:""}
+  <div class="bar" title="${n} étapes sur ${PSTEPS.length}"><i style="width:${Math.round(100*n/PSTEPS.length)}%"></i></div>
+  ${nx?`<div class="nx ${nx.late?"late":""}">${nx.late?`⏰ À relancer : ${esc(nx.todo.replace(/^Attendre /,""))} depuis ${nx.late} j`:(nx.wait?"⏳ ":"→ ")+esc(nx.todo)}</div>`:""}
+  <div style="margin-top:6px">${p.code?`<span class="tag">${st.code?"✓":"⚠︎"} ${esc(p.code)}</span>`:""}${p.contract?`<span class="tag">📄 Signé</span>`:""}</div>
+  ${ls&&(ls.by||ls.byId)?`<div class="m muted" style="margin-top:6px">${avatar(ls.by,ls.byId)} ${esc(ls.label)}${ls.at?", "+esc(fmtD(ls.at)):""}</div>`:""}</div>`;
+}
+function renderPartners(){
+  const cnt={};S.partners.forEach(p=>{const ph=phaseOf(p);cnt[ph]=(cnt[ph]||0)+1});
+  const late=S.partners.filter(p=>{const n=pNext(p);return n&&n.late}).length;
+  const todo=S.partners.filter(p=>{const n=pNext(p);return n&&!n.wait&&phaseOf(p)!=="À contacter"}).length;
+  $("pfilters").innerHTML=`<span class="chip ${pview==="board"?"on":""}" data-pv="board">Colonnes</span><span class="chip ${pview==="list"?"on":""}" data-pv="list">Liste</span><span style="width:10px"></span>`+
+    [["all",`Tous (${S.partners.length})`],["todo",`À faire par nous (${todo})`],["late",`⏰ À relancer (${late})`]].map(([k,l])=>`<span class="chip ${pfilter===k?"on":""}" data-pf="${k}">${l}</span>`).join("")+
+    (pview==="list"?PST.filter(s=>cnt[s]).map(s=>`<span class="chip ${pfilter===s?"on":""}" data-pf="${esc(s)}">${esc(s)} (${cnt[s]})</span>`).join(""):"");
+  const keep=p=>pfilter==="all"||(pfilter==="late"?(pNext(p)||{}).late:pfilter==="todo"?(()=>{const n=pNext(p);return n&&!n.wait&&phaseOf(p)!=="À contacter"})():phaseOf(p)===pfilter);
+  const list=S.partners.filter(keep).sort((a,b)=>PST.indexOf(phaseOf(a))-PST.indexOf(phaseOf(b))||String(a.name).localeCompare(String(b.name)));
+  if(pview==="board"){
+    const cols=PST.filter(s=>s!=="En pause"&&s!=="Refus / sans réponse"||list.some(p=>phaseOf(p)===s));
+    $("plist").className="board";
+    $("plist").innerHTML=cols.map(c=>{const it=list.filter(p=>phaseOf(p)===c);return `<div class="col"><h4>${esc(c)}<span>${it.length}</span></h4>${it.map(pCard).join("")||`<div class="muted" style="padding:6px">—</div>`}</div>`}).join("");
+  }else{$("plist").className="plist";$("plist").innerHTML=list.length?list.map(pCard).join(""):`<div class="muted">Aucun partenariat ici.</div>`}
+  renderKpis();if(typeof renderTodo==="function")renderTodo();
+}
+$("pfilters").addEventListener("click",e=>{const v=e.target.closest("[data-pv]");if(v){pview=v.dataset.pv;if(pview==="board"&&!["all","todo","late"].includes(pfilter))pfilter="all";renderPartners();return}
+  const c=e.target.closest("[data-pf]");if(c){pfilter=c.dataset.pf;renderPartners()}});
 $("plist").addEventListener("click",e=>{const c=e.target.closest(".pc");if(c)editPartner(S.partners.find(p=>p._id===c.dataset.id))});
 $("newPartner").onclick=()=>editPartner(null);
+const addDays=(d,n)=>{const x=new Date((d||today())+"T12:00:00");x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
+async function syncPartnerPost(p){
+  if(!p||!p._id)return;const st=stepsOf(p);if(!(st.colis||st.signe||st.video))return;
+  const h=p.handle?"@"+String(p.handle).replace(/^@/,""):p.name;
+  const want=st.reel?"publie":st.valide?"pret":st.video?"avalider":"attente";
+  const ex=S.posts.find(x=>x.partnerId===p._id);
+  if(!ex){await save("posts",null,{title:`Reel en Collab — ${h}`,network:"Instagram",format:"Reel / Vidéo",source:"creatrice",partnerId:p._id,status:want,
+    date:st.reel?st.reel.at:addDays((st.colis||st.signe||st.video).at,15),time:"",caption:"",notes:"Vidéo faite par la créatrice. Validation par les deux parties, puis publication en Collab avec @kabinecare. Stories avec sticker lien et son code.",created:Date.now(),by:me()||null,byId:uid||null});return}
+  const order=STATUSES.map(s=>s[0]);if(order.indexOf(want)>order.indexOf(ex.status||"idee")){const o=Object.assign({},ex);delete o._id;o.status=want;if(want==="publie"&&st.reel&&st.reel.at)o.date=st.reel.at;o.updated=Date.now();await save("posts",ex._id,o)}
+}
+function stepsHTML(st){
+  const n=nextIdx(st);
+  return PSTEPS.map(([k,l],i)=>{const s=st[k];return `<label class="stp ${s?"done":""} ${i===n?"cur":""}"><input type="checkbox" data-st="${k}" ${s?"checked":""}><span class="l">${esc(l)}</span>${s?`<span class="w">${s.at?esc(fmtD(s.at)):""} ${avatar(s.by,s.byId)}</span>`:i===n?`<span class="w">prochaine étape</span>`:""}</label>`}).join("");
+}
 function editPartner(p){
-  p=p||{status:"À contacter",type:"Influenceuse"};let contract=p.contract||null,cname=p.contractName||"";
+  p=p||{type:"Influenceuse"};let contract=p.contract||null,cname=p.contractName||"";let steps=JSON.parse(JSON.stringify(stepsOf(p)));
   openModal(`<h3>${p._id?esc(p.name):"Nouveau partenariat"}</h3>
   <div class="f2"><div class="fld"><label>Nom</label><input type="text" id="xn" value="${esc(p.name||"")}"></div>
   <div class="fld"><label>Compte (@)</label><input type="text" id="xh" value="${esc(p.handle||"")}"></div></div>
   <div class="f2"><div class="fld"><label>Type</label><select id="xt">${opts(PTYPES,p.type)}</select></div>
-  <div class="fld"><label>Statut</label><select id="xs">${opts(PST,p.status)}</select></div></div>
+  <div class="fld"><label>Situation</label><select id="xs">${opts(POUT,outcomeOf(p))}</select></div></div>
+  <div class="mbox" style="margin-bottom:10px"><h4>Avancement</h4><div class="note" style="margin:0 0 6px">Coche chaque étape quand elle est faite : la date et ton prénom s’enregistrent tout seuls.</div><div id="xsteps">${stepsHTML(steps)}</div></div>
   <div class="mbox" style="margin-bottom:10px"><h4>Code promo de sa communauté</h4>
   <div style="display:flex;gap:8px;align-items:center"><input type="text" id="xc" value="${esc(p.code||"")}" placeholder="ex. SAMSKY10" style="flex:1;text-transform:uppercase"><button class="btn ghost" id="xcs" type="button">Proposer</button></div>
-  <label style="display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:13px"><input type="checkbox" id="xcl" ${p.codeLive?"checked":""} style="width:auto"> Code créé sur Shopify</label>
   <button class="btn" id="xcsh" type="button" style="margin-top:8px">🛒 Copier le code et ouvrir Shopify</button>
-  <div class="note" id="xcn" style="margin-top:6px">Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer. Puis coche la case ci-dessus.</div></div>
-  <div class="f2"><div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
-  <div class="f2"><div class="fld"><label>Date de contact</label><input type="date" id="xd" value="${esc(p.date||"")}"></div>
-  <div class="fld"><label>Animal / race</label><input type="text" id="xa" value="${esc(p.animal||"")}"></div></div>
+  <div class="note" id="xcn" style="margin-top:6px">Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer. Puis coche « Code promo créé sur Shopify » dans l’avancement.<br>Si Shopify dit que le code existe déjà, c’est un ancien code désactivé : ouvre-le dans Remises et retire sa date de fin.</div></div>
   <div class="mbox" style="margin-bottom:10px"><h4>Pour le contrat</h4>
   <div class="f2"><div class="fld"><label>Nom et prénom</label><input type="text" id="xfn" value="${esc(p.fullName||"")}"></div>
   <div class="fld"><label>Nom du chien</label><input type="text" id="xdn" value="${esc(p.dogName||"")}"></div></div>
   <div class="fld"><label>E-mail</label><input type="text" id="xem" value="${esc(p.email||"")}" inputmode="email"></div>
   <div class="fld" style="margin:0"><label>Adresse postale</label><textarea id="xad" style="min-height:54px">${esc(p.address||"")}</textarea></div>
-  <button class="btn" id="mkct" type="button" style="margin-top:10px">📝 Générer le contrat</button></div>
+  <button class="btn" id="mkct" type="button" style="margin-top:10px">📝 Générer le contrat</button>
+  <div class="fld" style="margin:12px 0 0"><label>Contrat signé (PDF ou photo)</label><input type="file" id="xf" accept="application/pdf,image/*"><div id="xv" class="note">${contract?`<a href="${img(contract)}" data-asset="${esc(contract||"")}" target="_blank" rel="noopener">📄 ${esc(cname||"Ouvrir le contrat")}</a>`:"Pas encore reçu"}</div></div></div>
+  <div class="f2"><div class="fld"><label>Animal / race</label><input type="text" id="xa" value="${esc(p.animal||"")}"></div>
+  <div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
   <div class="fld"><label>Conditions convenues, notes</label><textarea id="xo">${esc(p.notes||"")}</textarea></div>
-  <div class="fld"><label>Contrat (PDF ou image)</label><input type="file" id="xf" accept="application/pdf,image/*"><div id="xv" class="note">${contract?`<a href="${img(contract)}" data-asset="${esc(contract||"")}" target="_blank" rel="noopener">📄 ${esc(cname||"Ouvrir le contrat")}</a>`:"Aucun contrat"}</div></div>
   <div class="mfoot"><div>${p._id?`<button class="btn danger" id="dl">Supprimer</button>`:""}</div><div style="display:flex;gap:8px"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div></div>`,m=>{
     const q=s=>m.querySelector(s);q("#cx").onclick=closeModal;
-    q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`}};
+    const read=()=>({name:q("#xn").value.trim()||p.name||"",handle:q("#xh").value.trim(),type:q("#xt").value,outcome:q("#xs").value,steps,code:q("#xc").value.trim().toUpperCase(),codeLive:!!steps.code,commission:q("#xm").value===""?null:Number(q("#xm").value),date:(steps.contact&&steps.contact.at)||p.date||"",animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null});
+    const withStatus=d=>Object.assign(d,{status:phaseOf(d)});
+    q("#xsteps").addEventListener("change",async e=>{const k=e.target.dataset.st;if(!k)return;
+      if(e.target.checked)steps[k]={at:today(),by:me()||null,byId:uid||null};else delete steps[k];
+      if(k==="signe"&&e.target.checked&&!contract)q("#xv").innerHTML="Pense à ajouter le contrat signé ici 👇";
+      q("#xsteps").innerHTML=stepsHTML(steps);
+      if(p._id&&(q("#xn").value.trim()||p.name)){const d=withStatus(read());await save("partners",p._id,d);Object.assign(p,d);syncPartnerPost(Object.assign({_id:p._id},d))}});
+    q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`;
+      if(!steps.signe){steps.signe={at:today(),by:me()||null,byId:uid||null};q("#xsteps").innerHTML=stepsHTML(steps)}}};
     q("#xcs").onclick=()=>{if(!q("#xc").value.trim())q("#xc").value=codeFrom(q("#xh").value)};
     q("#xcsh").onclick=async()=>{let c=q("#xc").value.trim().toUpperCase();if(!c){c=codeFrom(q("#xh").value);q("#xc").value=c}
-      try{await navigator.clipboard.writeText(c);q("#xcn").innerHTML="✅ <b>"+esc(c)+"</b> copié. Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer."}catch(e){}
+      try{await navigator.clipboard.writeText(c);q("#xcn").innerHTML="✅ <b>"+esc(c)+"</b> copié. Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer. Puis coche « Code promo créé sur Shopify »."}catch(e){}
       window.open("https://kabinecare.com/admin/discounts","_blank","noopener")};
     q("#mkct").onclick=async()=>{const info={id:p._id||null,name:q("#xn").value.trim(),handle:q("#xh").value.trim().replace(/^@/,""),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),animal:q("#xa").value.trim(),code:q("#xc").value.trim().toUpperCase()};
-      if(p._id){try{const o=Object.assign({},p);delete o._id;await save("partners",p._id,Object.assign(o,{fullName:info.fullName,dogName:info.dogName,email:info.email,address:info.address,code:info.code,codeLive:q("#xcl").checked,updated:Date.now(),by:me()||null,byId:uid||null}))}catch(e){}}
+      if(p._id){try{await save("partners",p._id,withStatus(read()))}catch(e){}}
       closeModal();contractForm(info)};
     if(q("#dl"))q("#dl").onclick=async()=>{if(q("#dl").dataset.c){await del("partners",p._id);closeModal()}else{q("#dl").dataset.c=1;q("#dl").textContent="Confirmer la suppression"}};
     q("#ok").onclick=async()=>{const n=q("#xn").value.trim();if(!n){q("#xn").focus();return}
       if(!q("#ok").dataset.c){const h=normH(q("#xh").value),nn=norm(n);
         const hit=S.partners.find(x=>x._id!==p._id&&((h&&normH(x.handle)===h)||norm(x.name)===nn));
         if(hit){q("#ok").dataset.c=1;q("#ok").textContent="Enregistrer quand même";
-          q(".mfoot").insertAdjacentHTML("beforebegin",`<div class="dup">Déjà dans tes partenariats : <b>${esc(hit.name)}</b>${hit.handle?" (@"+esc(String(hit.handle).replace(/^@/,""))+")":""} — statut « ${esc(hit.status||"À contacter")} »${hit.date?", contact le "+esc(fmtD(hit.date)):""}. <a id="opdup">Ouvrir sa fiche</a></div>`);
+          q(".mfoot").insertAdjacentHTML("beforebegin",`<div class="dup">Déjà dans tes partenariats : <b>${esc(hit.name)}</b>${hit.handle?" (@"+esc(String(hit.handle).replace(/^@/,""))+")":""} — ${esc(phaseOf(hit))}. <a id="opdup">Ouvrir sa fiche</a></div>`);
           q("#opdup").onclick=()=>editPartner(hit);return}}
-      const d={name:n,handle:q("#xh").value.trim(),type:q("#xt").value,status:q("#xs").value,code:q("#xc").value.trim().toUpperCase(),codeLive:q("#xcl").checked,commission:q("#xm").value===""?null:Number(q("#xm").value),date:q("#xd").value,animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null};
-      await save("partners",p._id||null,d);closeModal();};
+      const d=withStatus(read());await save("partners",p._id||null,d);if(p._id)syncPartnerPost(Object.assign({_id:p._id},d));closeModal();};
   });
 }
 
@@ -820,7 +974,7 @@ function historyItems(){
   S.strategy.filter(x=>x.status==="Terminé").forEach(x=>it.push({date:x.doneAt||x.end||"",cat:"Stratégie",title:x.title,details:[x.type,x.result].filter(Boolean).join(" · "),lesson:x.lesson,by:x.by,byId:x.byId,kind:"s",id:x._id}));
   S.tasks.filter(t=>t.done).forEach(t=>it.push({date:t.doneAt||"",cat:"Tâche faite",title:t.text,by:t.by,byId:t.byId,kind:"t",id:t._id}));
   S.posts.filter(p=>p.status==="publie").forEach(p=>it.push({date:p.date||"",cat:"Contenu",title:"Publié : "+(p.title||"Sans titre"),details:[netList(p.network).join(" + "),p.format].filter(Boolean).join(" · "),by:p.publishedBy||p.by,byId:p.publishedById||p.byId,kind:"p",id:p._id}));
-  S.partners.filter(p=>p.status&&p.status!=="À contacter").forEach(p=>it.push({date:p.date||"",cat:"Partenariat",title:`${p.name} — ${p.status}`,details:[p.handle?"@"+String(p.handle).replace(/^@/,""):"",p.code?"code "+p.code:""].filter(Boolean).join(" · "),by:p.by,byId:p.byId,kind:"r",id:p._id}));
+  S.partners.forEach(p=>{const st=stepsOf(p);const h=p.handle?"@"+String(p.handle).replace(/^@/,""):"";PSTEPS.forEach(([k,l])=>{const x=st[k];if(x)it.push({date:x.at||"",cat:"Partenariat",title:`${p.name} — ${l}`,details:[h,k==="code"&&p.code?"code "+p.code:""].filter(Boolean).join(" · "),by:x.by,byId:x.byId,kind:"r",id:p._id})})});
   return it.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 }
 function findSimilar(text){
@@ -856,7 +1010,7 @@ function renderHistory(){
 $("hq").addEventListener("input",renderHistory);
 $("hfilters").addEventListener("click",e=>{const c=e.target.closest("[data-hc]");if(c){hcat=c.dataset.hc;renderHistory()}});
 $("hlist").addEventListener("click",e=>{
-  const u=e.target.dataset.undo;if(u){const t=S.tasks.find(x=>x._id===u);if(t)save("tasks",u,{text:t.text,done:false,created:t.created||Date.now(),createdBy:t.createdBy||null,createdById:t.createdById||null});return}
+  const u=e.target.dataset.undo;if(u){const t=S.tasks.find(x=>x._id===u);if(t)save("tasks",u,taskDoc(t,{done:false,doneAt:null,by:null,byId:null}));return}
   const c=e.target.closest(".hi.click");if(!c)return;const id=c.dataset.id,k=c.dataset.k;
   if(k==="j")editJournal(S.journal.find(x=>x._id===id));else if(k==="p")editPost(S.posts.find(x=>x._id===id));else if(k==="r")editPartner(S.partners.find(x=>x._id===id));else if(k==="s")editStrat(S.strategy.find(x=>x._id===id));
 });
@@ -959,6 +1113,17 @@ async function runSeed(){
     await DB.collection("meta").doc(SEED_ID).set({at:Date.now(),by:uid});
   }catch(e){}
 }
+const SEED2_ID="2026-11-24-crm";
+async function runSeed2(){
+  if(DOCS.meta&&DOCS.meta.get(SEED2_ID))return;
+  try{
+    for(const [id,code] of Object.entries(SEED.codes)){const d=DOCS.partners&&DOCS.partners.get(id);if(d&&d.code===code){const o=Object.assign({},d);o.code="";o.codeLive=false;await DB.collection("partners").doc(id).set(o)}}
+    await DB.collection("journal").doc("j17").set({date:"2026-11-24",cat:"Offre / code promo",by:"Amy",created:17,title:"12 codes promo créés par erreur, puis désactivés",details:"Le 24/11, Claude a créé un code -10 % pour chacune des 12 créatrices contactées, alors que seules 3 ont accepté. Les 12 codes ont été désactivés le jour même (statut « Expiré » dans Shopify › Remises).",lesson:"Un code se crée à la main, un par un, seulement quand la créatrice a accepté : étape « Code promo créé sur Shopify » dans sa fiche. Si Shopify dit qu’un code existe déjà, ouvre-le dans Remises et retire sa date de fin pour le réactiver."});
+    const st6=DOCS.strategy&&DOCS.strategy.get("st06");
+    if(st6)await DB.collection("strategy").doc("st06").set(Object.assign({},st6,{details:"Tout se suit dans la fiche de chaque créatrice (onglet Partenariats › Avancement), en cochant les étapes :\n1. Message envoyé → 2. Elle a accepté → 3. Infos reçues (nom, adresse, e-mail)\n4. Contrat envoyé → 5. Contrat signé reçu\n6. Code promo créé sur Shopify → 7. Colis envoyé\n8. Vidéo reçue → 9. Validée par les deux → 10. Reel publié en Collab → 11. Stories avec le code\n12. Repartage sur @kabinecare → 13. Bilan des ventes du code.\nL’appli signale les relances : pas de réponse après 7 jours, contrat non signé après 5 jours, pas de vidéo 15 jours après le colis."}));
+    await DB.collection("meta").doc(SEED2_ID).set({at:Date.now(),by:uid});
+  }catch(e){}
+}
 /* ---------- connexion ---------- */
 function authMsg(t,bad){$("aMsg").textContent=t;$("aMsg").style.color=bad?"#7A3A1E":""}
 $("gBtn").onclick=async()=>{const {error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin}});if(error)authMsg("La connexion Google n’est pas encore activée : utilise le lien par e-mail.",1)};
@@ -988,7 +1153,7 @@ async function start(session){
   $("auth").classList.add("hide");$("sync").textContent="Chargement…";
   db=DB;assets=ASSETS;mcp=null;
   try{await loadAll()}catch(e){$("nodb").classList.remove("hide");$("sync").textContent="";return}
-  await runSeed();
+  await runSeed();await runSeed2();
   Object.keys(S).forEach(col=>{db.collection(col).onSnapshot(snap=>{S[col]=snap.docs.map(d=>Object.assign({_id:d.id},d.data()));R[col]()})});
   live();$("sync").textContent="";
   const saved=MEMBERS.find(x=>x.email===ls.get(ACT_KEY));if(saved&&isShared())ME=saved;uid=ME.email;
