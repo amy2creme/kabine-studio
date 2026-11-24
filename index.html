@@ -622,7 +622,7 @@ function renderPartners(){
   $("pfilters").innerHTML=[`<span class="chip ${pfilter==="all"?"on":""}" data-pf="all">Tous (${S.partners.length})</span>`].concat(PST.filter(s=>counts[s]).map(s=>`<span class="chip ${pfilter===s?"on":""}" data-pf="${esc(s)}">${esc(s)} (${counts[s]})</span>`)).join("");
   const list=S.partners.filter(p=>pfilter==="all"||p.status===pfilter).sort((a,b)=>PST.indexOf(a.status)-PST.indexOf(b.status)||String(a.name).localeCompare(String(b.name)));
   $("plist").innerHTML=list.length?list.map(p=>`<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${esc(p.type||"")}${p.handle?" · @"+esc(String(p.handle).replace(/^@/,"")):""}${p.animal?" · "+esc(p.animal):""}</div>
-    <span class="st s${Math.max(0,PST.indexOf(p.status))}">${esc(p.status||"À contacter")}</span>${p.code?` <span class="tag">Code ${esc(p.code)}</span>`:""}${p.contract?` <span class="tag">📄 Contrat</span>`:""}
+    <span class="st s${Math.max(0,PST.indexOf(p.status))}">${esc(p.status||"À contacter")}</span>${p.code?` <span class="tag">Code ${esc(p.code)}${p.codeLive?" ✓":" · à créer"}</span>`:""}${p.contract?` <span class="tag">📄 Contrat</span>`:""}
     ${p.date?`<div class="m muted" style="margin-top:6px">Contact : ${fmtD(p.date)}</div>`:""}${p.by||p.byId?`<div style="margin-top:6px">${whoTag(p,"Suivi par ")}</div>`:""}</div>`).join(""):`<div class="muted">Aucun partenariat ici.</div>`;
   renderKpis();
 }
@@ -636,8 +636,12 @@ function editPartner(p){
   <div class="fld"><label>Compte (@)</label><input type="text" id="xh" value="${esc(p.handle||"")}"></div></div>
   <div class="f2"><div class="fld"><label>Type</label><select id="xt">${opts(PTYPES,p.type)}</select></div>
   <div class="fld"><label>Statut</label><select id="xs">${opts(PST,p.status)}</select></div></div>
-  <div class="f2"><div class="fld"><label>Code promo</label><input type="text" id="xc" value="${esc(p.code||"")}"></div>
-  <div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
+  <div class="mbox" style="margin-bottom:10px"><h4>Code promo de sa communauté</h4>
+  <div style="display:flex;gap:8px;align-items:center"><input type="text" id="xc" value="${esc(p.code||"")}" placeholder="ex. SAMSKY10" style="flex:1;text-transform:uppercase"><button class="btn ghost" id="xcs" type="button">Proposer</button></div>
+  <label style="display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:13px"><input type="checkbox" id="xcl" ${p.codeLive?"checked":""} style="width:auto"> Code créé sur Shopify</label>
+  <button class="btn" id="xcsh" type="button" style="margin-top:8px">🛒 Copier le code et ouvrir Shopify</button>
+  <div class="note" id="xcn" style="margin-top:6px">Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer. Puis coche la case ci-dessus.</div></div>
+  <div class="f2"><div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
   <div class="f2"><div class="fld"><label>Date de contact</label><input type="date" id="xd" value="${esc(p.date||"")}"></div>
   <div class="fld"><label>Animal / race</label><input type="text" id="xa" value="${esc(p.animal||"")}"></div></div>
   <div class="mbox" style="margin-bottom:10px"><h4>Pour le contrat</h4>
@@ -651,8 +655,12 @@ function editPartner(p){
   <div class="mfoot"><div>${p._id?`<button class="btn danger" id="dl">Supprimer</button>`:""}</div><div style="display:flex;gap:8px"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div></div>`,m=>{
     const q=s=>m.querySelector(s);q("#cx").onclick=closeModal;
     q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`}};
-    q("#mkct").onclick=async()=>{const info={id:p._id||null,name:q("#xn").value.trim(),handle:q("#xh").value.trim().replace(/^@/,""),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),animal:q("#xa").value.trim()};
-      if(p._id){try{const o=Object.assign({},p);delete o._id;await save("partners",p._id,Object.assign(o,{fullName:info.fullName,dogName:info.dogName,email:info.email,address:info.address,updated:Date.now(),by:me()||null,byId:uid||null}))}catch(e){}}
+    q("#xcs").onclick=()=>{if(!q("#xc").value.trim())q("#xc").value=codeFrom(q("#xh").value)};
+    q("#xcsh").onclick=async()=>{let c=q("#xc").value.trim().toUpperCase();if(!c){c=codeFrom(q("#xh").value);q("#xc").value=c}
+      try{await navigator.clipboard.writeText(c);q("#xcn").innerHTML="✅ <b>"+esc(c)+"</b> copié. Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer."}catch(e){}
+      window.open("https://kabinecare.com/admin/discounts","_blank","noopener")};
+    q("#mkct").onclick=async()=>{const info={id:p._id||null,name:q("#xn").value.trim(),handle:q("#xh").value.trim().replace(/^@/,""),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),animal:q("#xa").value.trim(),code:q("#xc").value.trim().toUpperCase()};
+      if(p._id){try{const o=Object.assign({},p);delete o._id;await save("partners",p._id,Object.assign(o,{fullName:info.fullName,dogName:info.dogName,email:info.email,address:info.address,code:info.code,codeLive:q("#xcl").checked,updated:Date.now(),by:me()||null,byId:uid||null}))}catch(e){}}
       closeModal();contractForm(info)};
     if(q("#dl"))q("#dl").onclick=async()=>{if(q("#dl").dataset.c){await del("partners",p._id);closeModal()}else{q("#dl").dataset.c=1;q("#dl").textContent="Confirmer la suppression"}};
     q("#ok").onclick=async()=>{const n=q("#xn").value.trim();if(!n){q("#xn").focus();return}
@@ -661,7 +669,7 @@ function editPartner(p){
         if(hit){q("#ok").dataset.c=1;q("#ok").textContent="Enregistrer quand même";
           q(".mfoot").insertAdjacentHTML("beforebegin",`<div class="dup">Déjà dans tes partenariats : <b>${esc(hit.name)}</b>${hit.handle?" (@"+esc(String(hit.handle).replace(/^@/,""))+")":""} — statut « ${esc(hit.status||"À contacter")} »${hit.date?", contact le "+esc(fmtD(hit.date)):""}. <a id="opdup">Ouvrir sa fiche</a></div>`);
           q("#opdup").onclick=()=>editPartner(hit);return}}
-      const d={name:n,handle:q("#xh").value.trim(),type:q("#xt").value,status:q("#xs").value,code:q("#xc").value.trim(),commission:q("#xm").value===""?null:Number(q("#xm").value),date:q("#xd").value,animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null};
+      const d={name:n,handle:q("#xh").value.trim(),type:q("#xt").value,status:q("#xs").value,code:q("#xc").value.trim().toUpperCase(),codeLive:q("#xcl").checked,commission:q("#xm").value===""?null:Number(q("#xm").value),date:q("#xd").value,animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null};
       await save("partners",p._id||null,d);closeModal();};
   });
 }
@@ -671,7 +679,7 @@ const BRAND={name:"Kabine Care",rep:"Aminata Magali Kaba",siret:"909 345 134 000
 const frDate=d=>{try{return new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}catch(e){return d}};
 const codeFrom=h=>(String(h||"").replace(/^@/,"").toUpperCase().replace(/[^A-Z0-9]/g,"")||"CODE")+"10";
 function contractForm(c){
-  const pr=c.id&&S.partners.find(x=>x._id===c.id);const code=(pr&&pr.code)||codeFrom(c.handle);
+  const pr=c.id&&S.partners.find(x=>x._id===c.id);const code=c.code||(pr&&pr.code)||codeFrom(c.handle);
   openModal(`<h3>Contrat : ${esc(c.fullName||c.name||c.handle||"")}</h3>
   <div class="note" style="margin-top:0">Rien n’est obligatoire : ce qui reste vide n’apparaît pas dans le contrat. Tu pourras encore modifier le texte avant le PDF.</div>
   <div class="f2"><div class="fld"><label>Code promo de sa communauté</label><input type="text" id="cc" value="${esc(code)}"></div><div class="fld"><label>Réduction</label><input type="text" id="cr" value="10 %"></div></div>
