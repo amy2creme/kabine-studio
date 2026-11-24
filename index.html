@@ -712,8 +712,8 @@ const PSTEPS=[
  ["bilan","Bilan fait (ventes du code)","Faire le bilan : ventes avec son code"]];
 const PWAIT={reponse:["contact",7],signe:["contrat",5],video:["colis",15],reel:["valide",5],stories:["valide",5]};
 const PPHASES=[["À contacter",0,0],["Message envoyé",1,1],["Contrat",2,4],["Code & colis",5,6],["Contenu",7,10],["Repartage & bilan",11,12],["Terminé",13,13]];
-const POUT=["En cours","En pause","Pas adapté","Refus","Sans réponse"];
-const OUTTXT={"Pas adapté":"Pas adapté pour l’instant","Refus":"A refusé","Sans réponse":"Sans réponse","En pause":"En pause"};
+const POUT=["En cours","Terminé","En pause","Pas adapté","Refus","Sans réponse"];
+const OUTTXT={"Terminé":"Collaboration terminée","Pas adapté":"Pas adapté pour l’instant","Refus":"A refusé","Sans réponse":"Sans réponse","En pause":"En pause"};
 const PHCLS={"À contacter":"s0","Message envoyé":"s1","Contrat":"s3","Code & colis":"s5","Contenu":"s2","Repartage & bilan":"s4","Terminé":"s7","En pause":"s0","Clôturé":"s6"};
 const OLDST={"Message envoyé":1,"Relance":1,"Accepté":2,"Colis envoyé":7,"Contenu publié":10,"Terminé":13};
 const PST=PPHASES.map(x=>x[0]).concat(["En pause","Clôturé"]);
@@ -726,7 +726,7 @@ function stepsOf(p){
 }
 function outcomeOf(p){if(p.outcome)return p.outcome;if(p.status==="Refus / sans réponse")return "Sans réponse";return "En cours"}
 function nextIdx(st){const i=PSTEPS.findIndex(s=>!st[s[0]]);return i<0?PSTEPS.length:i}
-function phaseOf(p){const out=outcomeOf(p);if(out==="En pause")return "En pause";if(out!=="En cours")return "Clôturé";
+function phaseOf(p){const out=outcomeOf(p);if(out==="En pause")return "En pause";if(out==="Terminé")return "Terminé";if(out!=="En cours")return "Clôturé";
   const n=nextIdx(stepsOf(p));return (PPHASES.find(x=>n>=x[1]&&n<=x[2])||PPHASES[0])[0]}
 const daysSince=d=>d?Math.floor((Date.now()-new Date(d+"T12:00:00").getTime())/864e5):0;
 function pNext(p){
@@ -739,7 +739,7 @@ function lastStep(p){const st=stepsOf(p);let best=null;PSTEPS.forEach(([k,l])=>{
 function pCard(p){
   const st=stepsOf(p),n=PSTEPS.filter(s=>st[s[0]]).length,ph=phaseOf(p),nx=pNext(p),ls=lastStep(p);
   return `<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${p.handle?"@"+esc(String(p.handle).replace(/^@/,"")):esc(p.type||"")}${p.animal?" · "+esc(p.animal):""}</div>
-  ${pview==="list"&&outcomeOf(p)==="En cours"?`<span class="st ${PHCLS[ph]||"s0"}">${esc(ph)}</span>`:""}${outcomeOf(p)!=="En cours"?`<span class="st ${outcomeOf(p)==="En pause"?"s0":outcomeOf(p)==="Pas adapté"?"s5":"s6"}">${esc(OUTTXT[outcomeOf(p)])}</span>${p.reason?`<div class="m muted" style="margin-top:6px">« ${esc(p.reason)} »</div>`:""}`:""}
+  ${pview==="list"&&outcomeOf(p)==="En cours"?`<span class="st ${PHCLS[ph]||"s0"}">${esc(ph)}</span>`:""}${outcomeOf(p)!=="En cours"?`<span class="st ${outcomeOf(p)==="En pause"?"s0":outcomeOf(p)==="Terminé"?"s7":outcomeOf(p)==="Pas adapté"?"s5":"s6"}">${esc(OUTTXT[outcomeOf(p)])}</span>${p.reason?`<div class="m muted" style="margin-top:6px">« ${esc(p.reason)} »</div>`:""}`:""}
   <div class="bar" title="${n} étapes sur ${PSTEPS.length}"><i style="width:${Math.round(100*n/PSTEPS.length)}%"></i></div>
   ${nx?`<div class="nx ${nx.late?"late":""}">${nx.late?`⏰ À relancer : ${esc(nx.todo.replace(/^Attendre /,""))} depuis ${nx.late} j`:(nx.wait?"⏳ ":"→ ")+esc(nx.todo)}</div>`:""}
   <div style="margin-top:6px">${p.code?`<span class="tag">${st.code?"✓":"⚠︎"} ${esc(p.code)}</span>`:""}${p.contract?`<span class="tag">📄 Signé</span>`:""}</div>
@@ -800,7 +800,7 @@ function editPartner(p){
   <div class="fld"><label>E-mail</label><input type="text" id="xem" value="${esc(p.email||"")}" inputmode="email"></div>
   <div class="fld" style="margin:0"><label>Adresse postale</label><textarea id="xad" style="min-height:54px">${esc(p.address||"")}</textarea></div>
   <button class="btn" id="mkct" type="button" style="margin-top:10px">📝 Générer le contrat</button>
-  <div class="fld" style="margin:12px 0 0"><label>Contrat signé (PDF ou photo)</label><input type="file" id="xf" accept="application/pdf,image/*"><div id="xv" class="note">${contract?`<a href="${img(contract)}" data-asset="${esc(contract||"")}" target="_blank" rel="noopener">📄 ${esc(cname||"Ouvrir le contrat")}</a>`:"Pas encore reçu"}</div></div></div>
+  <div class="fld" style="margin:12px 0 0"><label>Contrat (PDF ou photo)</label><input type="file" id="xf" accept="application/pdf,image/*"><div id="xv" class="note">${contract?`<a href="${img(contract)}" data-asset="${esc(contract||"")}" target="_blank" rel="noopener">📄 ${esc(cname||"Ouvrir le contrat")}</a>`:"Pas encore reçu"}</div></div></div>
   <div class="f2"><div class="fld"><label>Animal / race</label><input type="text" id="xa" value="${esc(p.animal||"")}"></div>
   <div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
   <div class="fld"><label>Conditions convenues, notes</label><textarea id="xo">${esc(p.notes||"")}</textarea></div>
@@ -811,11 +811,11 @@ function editPartner(p){
     const withStatus=d=>{const o=outcomeOf(p);d.reason=q("#xr").value.trim();d.outcomeAt=d.outcome===o&&p.outcomeAt?p.outcomeAt:(d.outcome==="En cours"?null:{at:today(),by:me()||null,byId:uid||null});return Object.assign(d,{status:phaseOf(d)})};
     q("#xsteps").addEventListener("change",async e=>{const k=e.target.dataset.st;if(!k)return;
       if(e.target.checked)steps[k]={at:today(),by:me()||null,byId:uid||null};else delete steps[k];
-      if(k==="signe"&&e.target.checked&&!contract)q("#xv").innerHTML="Pense à ajouter le contrat signé ici 👇";
+      if(k==="signe"&&e.target.checked&&!contract)q("#xv").innerHTML="Pense à ajouter le contrat signé ici.";
       q("#xsteps").innerHTML=stepsHTML(steps);
       if(p._id&&(q("#xn").value.trim()||p.name)){const d=withStatus(read());await save("partners",p._id,d);Object.assign(p,d);syncPartnerPost(Object.assign({_id:p._id},d))}});
     q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`;
-      if(!steps.signe){steps.signe={at:today(),by:me()||null,byId:uid||null};q("#xsteps").innerHTML=stepsHTML(steps)}}};
+      if(!steps.signe)q("#xv").insertAdjacentHTML("beforeend","<br>Si c’est la version signée par elle, coche « Contrat signé reçu ».")}};
     q("#xcs").onclick=()=>{if(!q("#xc").value.trim())q("#xc").value=codeFrom(q("#xh").value)};
     q("#xcsh").onclick=async()=>{let c=q("#xc").value.trim().toUpperCase();if(!c){c=codeFrom(q("#xh").value);q("#xc").value=c}
       try{await navigator.clipboard.writeText(c);q("#xcn").innerHTML="✅ <b>"+esc(c)+"</b> copié. Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer. Puis coche « Code promo créé sur Shopify »."}catch(e){}
