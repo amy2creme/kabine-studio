@@ -290,7 +290,7 @@ textarea{min-height:110px;resize:vertical}
   </section>
 </main>
 
-<div id="ctv"><div class="ctbar"><button class="btn" id="ctSign">✍️ Signer</button><button class="btn" id="ctPdf">⬇️ Enregistrer en PDF</button><button class="btn" id="ctMail">✉️ Envoyer avec Gmail</button><button class="hide" id="ctPrint"></button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte en cliquant dessus. ① Signer  ② Enregistrer en PDF : dans la fenêtre qui s’ouvre, choisis « Enregistrer au format PDF » comme destination  ③ Envoyer avec Gmail : l’e-mail s’ouvre déjà rempli, glisse-y le PDF et envoie.</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
+<div id="ctv"><div class="ctbar"><button class="btn" id="ctSign">① ✍️ Signer</button><button class="btn" id="ctPdf">② ⬇️ Enregistrer en PDF</button><button class="btn" id="ctMail">③ ✉️ Envoyer avec Gmail</button><button class="btn ghost" id="ctCopy">📋 Copier le message</button><button class="hide" id="ctPrint"></button><button class="btn ghost" id="ctClose">Fermer</button><div class="hint">Tu peux modifier le texte en cliquant dessus. ① Signer  ② Enregistrer en PDF : dans la fenêtre qui s’ouvre, choisis « Enregistrer au format PDF » comme destination  ③ Envoyer avec Gmail : l’e-mail s’ouvre rempli, depuis kabinecare.com@gmail.com ; glisse-y le PDF et envoie. Pour répondre à un e-mail existant : « Copier le message », puis colle-le dans ta réponse.</div></div><div id="ctdoc" contenteditable="true" spellcheck="false"></div></div>
 <div class="ov" id="ov"><div class="md" id="md"></div></div>
 
 <script type="module">
@@ -741,7 +741,7 @@ function pNext(p){
 function lastStep(p){const st=stepsOf(p);let best=null;PSTEPS.forEach(([k,l])=>{const s=st[k];if(s&&(!best||(s.at||"")>=(best.at||"")))best=Object.assign({label:l},s)});return best}
 function pCard(p){
   const st=stepsOf(p),n=PSTEPS.filter(s=>st[s[0]]).length,ph=phaseOf(p),nx=pNext(p),ls=lastStep(p);
-  return `<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${p.handle?"@"+esc(String(p.handle).replace(/^@/,"")):esc(p.type||"")}${p.animal?" · "+esc(p.animal):""}</div>
+  return `<div class="pc" data-id="${p._id}"><div class="nm">${esc(p.name)}</div><div class="muted">${p.handle?"@"+esc(String(p.handle).replace(/^@/,"")):esc(p.type||"")}${p.animal?" · "+esc(p.animal):""}${p.followers?" · "+esc(p.followers)+" abonnés":""}</div>
   ${pview==="list"&&outcomeOf(p)==="En cours"?`<span class="st ${PHCLS[ph]||"s0"}">${esc(ph)}</span>`:""}${outcomeOf(p)!=="En cours"?`<span class="st ${outcomeOf(p)==="En pause"?"s0":outcomeOf(p)==="Terminé"?"s7":outcomeOf(p)==="Pas adapté"?"s5":"s6"}">${esc(OUTTXT[outcomeOf(p)])}</span>${p.reason?`<div class="m muted" style="margin-top:6px">« ${esc(p.reason)} »</div>`:""}`:""}
   <div class="bar" title="${n} étapes sur ${PSTEPS.length}"><i style="width:${Math.round(100*n/PSTEPS.length)}%"></i></div>
   ${nx?`<div class="nx ${nx.late?"late":""}">${nx.late?`⏰ À relancer : ${esc(nx.todo.replace(/^Attendre /,""))} depuis ${nx.late} j`:(nx.wait?"⏳ ":"→ ")+esc(nx.todo)}</div>`:""}
@@ -756,7 +756,7 @@ function renderPartners(){
     [["all",`Tous (${S.partners.length})`],["todo",`À faire par nous (${todo})`],["late",`⏰ À relancer (${late})`]].map(([k,l])=>`<span class="chip ${pfilter===k?"on":""}" data-pf="${k}">${l}</span>`).join("")+
     (pview==="list"?PST.filter(s=>cnt[s]).map(s=>`<span class="chip ${pfilter===s?"on":""}" data-pf="${esc(s)}">${esc(s)} (${cnt[s]})</span>`).join(""):"");
   const keep=p=>pfilter==="all"||(pfilter==="late"?(pNext(p)||{}).late:pfilter==="todo"?(()=>{const n=pNext(p);return n&&!n.wait&&phaseOf(p)!=="À contacter"})():phaseOf(p)===pfilter);
-  const sq=norm(($("psq")||{}).value||"");const hit=p=>!sq||norm([p.name,p.handle,p.fullName,p.dogName,p.animal,p.code,p.email,p.notes,p.reason].join(" ")).includes(sq);
+  const sq=norm(($("psq")||{}).value||"");const hit=p=>!sq||norm([p.name,p.handle,p.fullName,p.dogName,p.animal,p.code,p.email,p.notes,p.reason,p.why].join(" ")).includes(sq);
   const list=S.partners.filter(p=>keep(p)&&hit(p)).sort((a,b)=>PST.indexOf(phaseOf(a))-PST.indexOf(phaseOf(b))||String(a.name).localeCompare(String(b.name)));
   if(pview==="board"){
     const cols=PST.filter(s=>s!=="En pause"&&s!=="Clôturé"||list.some(p=>phaseOf(p)===s));
@@ -804,12 +804,15 @@ function editPartner(p){
   <div class="fld" style="margin:0"><label>Adresse postale</label><textarea id="xad" style="min-height:54px">${esc(p.address||"")}</textarea></div>
   <button class="btn" id="mkct" type="button" style="margin-top:10px">📝 Générer le contrat</button>
   <div class="fld" style="margin:12px 0 0"><label>Contrat (PDF ou photo)</label><input type="file" id="xf" accept="application/pdf,image/*"><div id="xv" class="note">${contract?`<a href="${img(contract)}" data-asset="${esc(contract||"")}" target="_blank" rel="noopener">📄 ${esc(cname||"Ouvrir le contrat")}</a>`:"Pas encore reçu"}</div></div></div>
+  <div class="f2"><div class="fld"><label>Abonnés</label><input type="text" id="xfo" value="${esc(p.followers||"")}" placeholder="ex. 8 500"></div>
+  <div class="fld"><label>Compte Instagram</label><button class="btn ghost" id="xig" type="button" style="width:100%">Ouvrir le compte ↗</button></div></div>
+  <div class="fld"><label>Pourquoi elle ?</label><input type="text" id="xwh" value="${esc(p.why||"")}" placeholder="ex. belle DA, chien actif, communauté engagée"></div>
   <div class="f2"><div class="fld"><label>Animal / race</label><input type="text" id="xa" value="${esc(p.animal||"")}"></div>
   <div class="fld"><label>Commission (%)</label><input type="number" id="xm" value="${esc(p.commission??"")}"></div></div>
   <div class="fld"><label>Conditions convenues, notes</label><textarea id="xo">${esc(p.notes||"")}</textarea></div>
   <div class="mfoot"><div>${p._id?`<button class="btn danger" id="dl">Supprimer</button>`:""}</div><div style="display:flex;gap:8px"><button class="btn ghost" id="cx">Annuler</button><button class="btn" id="ok">Enregistrer</button></div></div>`,m=>{
     const q=s=>m.querySelector(s);q("#cx").onclick=closeModal;
-    const read=()=>({name:q("#xn").value.trim()||p.name||"",handle:q("#xh").value.trim(),type:q("#xt").value,outcome:q("#xs").value,steps,code:q("#xc").value.trim().toUpperCase(),codeLive:!!steps.code,commission:q("#xm").value===""?null:Number(q("#xm").value),date:(steps.contact&&steps.contact.at)||p.date||"",animal:q("#xa").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null});
+    const read=()=>({name:q("#xn").value.trim()||p.name||"",handle:q("#xh").value.trim(),type:q("#xt").value,outcome:q("#xs").value,steps,code:q("#xc").value.trim().toUpperCase(),codeLive:!!steps.code,commission:q("#xm").value===""?null:Number(q("#xm").value),date:(steps.contact&&steps.contact.at)||p.date||"",animal:q("#xa").value.trim(),followers:q("#xfo").value.trim(),why:q("#xwh").value.trim(),fullName:q("#xfn").value.trim(),dogName:q("#xdn").value.trim(),email:q("#xem").value.trim(),address:q("#xad").value.trim(),notes:q("#xo").value,contract:contract||null,contractName:cname||"",updated:Date.now(),by:me()||null,byId:uid||null});
     const swr=()=>q("#xrw").classList.toggle("hide",q("#xs").value==="En cours");swr();q("#xs").onchange=swr;
     const withStatus=d=>{const o=outcomeOf(p);d.reason=q("#xr").value.trim();d.outcomeAt=d.outcome===o&&p.outcomeAt?p.outcomeAt:(d.outcome==="En cours"?null:{at:today(),by:me()||null,byId:uid||null});return Object.assign(d,{status:phaseOf(d)})};
     q("#xsteps").addEventListener("change",async e=>{const k=e.target.dataset.st;if(!k)return;
@@ -819,6 +822,7 @@ function editPartner(p){
       if(p._id&&(q("#xn").value.trim()||p.name)){const d=withStatus(read());await save("partners",p._id,d);Object.assign(p,d);syncPartnerPost(Object.assign({_id:p._id},d))}});
     q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`;
       if(!steps.signe)q("#xv").insertAdjacentHTML("beforeend","<br>Si c’est la version signée par elle, coche « Contrat signé reçu ».")}};
+    q("#xig").onclick=()=>{const h=q("#xh").value.trim().replace(/^@/,"");if(h)window.open("https://www.instagram.com/"+encodeURIComponent(h)+"/","_blank","noopener")};
     q("#xcs").onclick=()=>{if(!q("#xc").value.trim())q("#xc").value=codeFrom(q("#xh").value)};
     q("#xcsh").onclick=async()=>{let c=q("#xc").value.trim().toUpperCase();if(!c){c=codeFrom(q("#xh").value);q("#xc").value=c}
       try{await navigator.clipboard.writeText(c);q("#xcn").innerHTML="✅ <b>"+esc(c)+"</b> copié. Dans Shopify : Créer une remise › Montant de réduction sur les commandes › colle le code › 10 % › Enregistrer. Puis coche « Code promo créé sur Shopify »."}catch(e){}
@@ -913,11 +917,16 @@ $("ctSign").onclick=()=>{let saved=null;try{saved=localStorage.getItem(SIGK())}c
     else if(a==="saved"){putSig(saved);w.remove()}
     else if(a==="ok"){if(!used){w.remove();return}const url=cv.toDataURL("image/png");try{localStorage.setItem(SIGK(),url)}catch(e){}putSig(url);w.remove()}}};
 $("ctPdf").onclick=()=>$("ctPrint").onclick();
-$("ctMail").onclick=async()=>{if(!CT)return;const c=CT.c,who=(c.fullName||c.name||"").split(" ").filter(Boolean);const first=who.length>1&&who[0]===who[0].toUpperCase()?who[1]:who[0]||"";
+const MAILFROM="kabinecare.com@gmail.com";
+function ctMailText(){const c=CT.c,who=(c.fullName||c.name||"").split(" ").filter(Boolean);const first=who.length>1&&who[0]===who[0].toUpperCase()?who[1]:who[0]||"";
   const sub="Contrat de collaboration Kabine Care"+(c.handle?" × @"+c.handle:"");
-  const body=`Bonjour${first?" "+first:""},\n\nMerci encore d’avoir accepté notre collaboration, nous sommes ravies 🐾\n\nVous trouverez ci-joint le contrat qui reprend ce que nous avons convenu : les produits offerts, les contenus attendus et les délais.\n\nPourriez-vous le relire, le signer en ajoutant « Lu et approuvé », et nous le renvoyer en réponse à cet e-mail ? Dès réception, nous vous envoyons la Routine.\n\nN’hésitez pas si vous avez la moindre question.\n\nBelle journée,\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`;
-  window.open("https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(c.email||"")+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank","noopener");
-  if(c.id){const pr=S.partners.find(x=>x._id===c.id);if(pr){const st=JSON.parse(JSON.stringify(stepsOf(pr)));if(!st.contrat){st.contrat={at:today(),by:me()||null,byId:uid||null};const o=Object.assign({},pr);delete o._id;o.steps=st;o.status=phaseOf(o);o.updated=Date.now();await save("partners",c.id,o);alert2("Étape « Contrat envoyé » cochée dans sa fiche.")}}}};
+  const body=`Bonjour${first?" "+first:""},\n\nMerci beaucoup pour vos informations, et encore merci d’avoir accepté notre collaboration, nous sommes ravies 🐾\n\nVous trouverez ci-joint le contrat qui reprend ce que nous avons convenu : les produits offerts, les contenus attendus et les délais.\n\nPourriez-vous le relire, le signer en ajoutant « Lu et approuvé », puis nous le renvoyer en réponse à cet e-mail ? Dès réception du contrat signé, nous préparons l’envoi de votre colis.\n\nN’hésitez pas si vous avez la moindre question.\n\nBelle journée,\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`;
+  return {sub,body}}
+async function markSent(){const c=CT.c;if(!c.id)return;const pr=S.partners.find(x=>x._id===c.id);if(!pr)return;const st=JSON.parse(JSON.stringify(stepsOf(pr)));if(st.contrat)return;
+  st.contrat={at:today(),by:me()||null,byId:uid||null};const o=Object.assign({},pr);delete o._id;o.steps=st;o.status=phaseOf(o);o.updated=Date.now();await save("partners",c.id,o);alert2("Étape « Contrat envoyé » cochée dans sa fiche (décoche-la si tu ne l’envoies pas).")}
+$("ctMail").onclick=()=>{if(!CT)return;const {sub,body}=ctMailText();
+  window.open("https://mail.google.com/mail/?authuser="+encodeURIComponent(MAILFROM)+"&view=cm&fs=1&to="+encodeURIComponent(CT.c.email||"")+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank","noopener");markSent()};
+$("ctCopy").onclick=async()=>{if(!CT)return;const {body}=ctMailText();const b=$("ctCopy");try{await navigator.clipboard.writeText(body);b.textContent="✓ Message copié";setTimeout(()=>b.textContent="📋 Copier le message",2500)}catch(e){}};
 
 /* ---------- historique & anti-doublon ---------- */
 const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9@ ]+/g," ").replace(/\s+/g," ").trim();
