@@ -801,7 +801,8 @@ function editPartner(p){
   <div class="mbox" style="margin-bottom:10px"><h4>Avancement</h4><div class="note" style="margin:0 0 6px">Coche chaque étape quand elle est faite : la date et ton prénom s’enregistrent tout seuls.</div><div id="xsteps">${stepsHTML(steps)}</div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><label style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--taud)">📦 Colis</label>
   <div class="row" style="margin-top:6px;gap:8px"><select id="xcar" style="flex:0 0 auto;width:auto">${opts(["Mondial Relay","Colissimo","La Poste","Autre"],p.carrier||"Mondial Relay")}</select><input type="text" id="xtr" value="${esc(p.tracking||"")}" placeholder="N° de suivi" style="flex:1"><button class="btn ghost sm" id="xtrk" type="button">Suivre ↗</button></div>
-  <div class="note" id="xtrn">Note le n° de suivi en envoyant le colis, puis coche « Colis envoyé ».</div></div></div>
+  <div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" id="xtrm" type="button">✉️ Prévenir la créatrice (Gmail)</button><button class="btn ghost sm" id="xtrc" type="button">📋 Copier le message</button></div>
+  <div class="note" id="xtrn">Dès que tu notes le n° de suivi, « Colis envoyé » se coche tout seul. Ensuite, « Prévenir la créatrice » ouvre un e-mail déjà rempli avec le lien de suivi.</div></div></div>
   <div class="mbox" style="margin-bottom:10px"><h4>Code promo de sa communauté</h4>
   <div style="display:flex;gap:8px;align-items:center"><input type="text" id="xc" value="${esc(p.code||"")}" placeholder="ex. SAMSKY10" style="flex:1;text-transform:uppercase"><button class="btn ghost" id="xcs" type="button">Proposer</button></div>
   <button class="btn" id="xcsh" type="button" style="margin-top:8px">🛒 Copier le code et ouvrir Shopify</button>
@@ -832,6 +833,18 @@ function editPartner(p){
       if(p._id&&(q("#xn").value.trim()||p.name)){const d=withStatus(read());await save("partners",p._id,d);Object.assign(p,d);syncPartnerPost(Object.assign({_id:p._id},d))}});
     q("#xf").onchange=async e=>{const f=e.target.files[0];if(!f)return;const id=await uploadFile(f);if(id){contract=id;cname=f.name;q("#xv").innerHTML=`<a href="${img(id)}" data-asset="${esc(id||"")}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`;
       if(!steps.signe)q("#xv").insertAdjacentHTML("beforeend","<br>Si c’est la version signée par elle, coche « Contrat signé reçu ».")}};
+    const trUrl=()=>{const n=q("#xtr").value.trim().replace(/\s+/g,"");const c=q("#xcar").value;const cp=((q("#xad").value||"").match(/\b\d{5}\b/)||[""])[0];
+      return c==="Mondial Relay"?"https://www.mondialrelay.fr/suivi-de-colis/?numeroExpedition="+encodeURIComponent(n)+(cp?"&codePostal="+cp:""):c==="Autre"?"":"https://www.laposte.fr/outils/suivre-vos-envois?code="+encodeURIComponent(n)};
+    const shipMail=()=>{const n=q("#xtr").value.trim(),c=q("#xcar").value,u=trUrl();const who=(q("#xfn").value.trim()||q("#xn").value.trim()).split(" ").filter(Boolean);const first=who.length>1&&who[0]===who[0].toUpperCase()?who[1]:who[0]||"";
+      const code=q("#xc").value.trim().toUpperCase();const h=q("#xh").value.trim().replace(/^@/,"");
+      return {sub:"Votre colis Kabine Care est en route 🐾",body:`Bonjour${first?" "+first:""},\n\nMerci beaucoup pour le retour du contrat signé, nous sommes ravies de commencer cette collaboration avec vous !\n\nVotre colis a été préparé avec soin et vient de vous être expédié${c&&c!=="Autre"?" par "+c:""}.\nNuméro de suivi : ${n}${u?"\nSuivre votre colis : "+u:""}\n\nComme convenu, vous disposez de 15 jours à partir de sa réception pour réaliser le Reel et les stories${code?" avec votre code "+code:""}. Pensez à nous envoyer le Reel pour validation avant de le publier en Collab avec @kabinecare.\n\nPouvez-vous nous prévenir quand vous l’aurez bien reçu ?\n\nBelle découverte 🐾\n\n${me()||"L’équipe"}\nKabine Care\nkabinecare.com · Instagram @kabinecare`}};
+    q("#xtr").addEventListener("change",async()=>{if(!q("#xtr").value.trim()||steps.colis)return;steps.colis={at:today(),by:me()||null,byId:uid||null};q("#xsteps").innerHTML=stepsHTML(steps);
+      if(p._id&&(q("#xn").value.trim()||p.name)){const d=withStatus(read());await save("partners",p._id,d);Object.assign(p,d);syncPartnerPost(Object.assign({_id:p._id},d))}
+      q("#xtrn").innerHTML="✅ « Colis envoyé » coché. Tu peux prévenir la créatrice."});
+    q("#xtrm").onclick=()=>{if(!q("#xtr").value.trim()){q("#xtr").focus();q("#xtrn").innerHTML="<b>Note d’abord le n° de suivi.</b>";return}const {sub,body}=shipMail();
+      window.open("https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(q("#xem").value.trim())+"&su="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank","noopener");
+      if(!q("#xem").value.trim())q("#xtrn").innerHTML="Son e-mail n’est pas dans sa fiche : ajoute-le dans « Pour le contrat », ou colle le message dans votre conversation."};
+    q("#xtrc").onclick=async()=>{if(!q("#xtr").value.trim()){q("#xtr").focus();return}try{await navigator.clipboard.writeText(shipMail().body);q("#xtrc").textContent="✓ Copié";setTimeout(()=>q("#xtrc").textContent="📋 Copier le message",2500)}catch(e){}};
     q("#xtrk").onclick=()=>{const n=q("#xtr").value.trim().replace(/\s+/g,"");if(!n){q("#xtr").focus();return}const c=q("#xcar").value;
       const cp=((q("#xad").value||"").match(/\b\d{5}\b/)||[""])[0];
       const u=c==="Mondial Relay"?"https://www.mondialrelay.fr/suivi-de-colis/?numeroExpedition="+encodeURIComponent(n)+(cp?"&codePostal="+cp:""):c==="Autre"?"https://www.google.com/search?q="+encodeURIComponent("suivi colis "+n):"https://www.laposte.fr/outils/suivre-vos-envois?code="+encodeURIComponent(n);
